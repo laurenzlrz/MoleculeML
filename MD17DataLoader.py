@@ -86,8 +86,7 @@ class MD17Dataloader:
             molecule_npy_arrays_dict = {molecule_attribute: self.apply_split(molecule_npz_array[molecule_attribute])
                                         for molecule_attribute in self.molecule_attributes}
 
-            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict,
-                                                              self.molecule_attributes)
+            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict)
 
     def apply_split(self, molecule_npy_array):
         """
