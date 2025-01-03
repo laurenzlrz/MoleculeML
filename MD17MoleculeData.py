@@ -6,34 +6,58 @@ from Utility import generate_indices
 
 
 class MD17Molecule:
+    """
+    A class used to represent a molecule and manage its data.
+
+    Attributes:
+        name (str): The name of the molecule.
+        npy_arrays_dict (dict): Dictionary of numpy arrays containing molecule data.
+        flattened_npy_dtypes_dict (dict): Dictionary of flattened numpy array data types.
+        flattened_npy_arrays_dict (dict): Dictionary of flattened numpy arrays.
+        numpy2D_structured (numpy.ndarray): 2D structured numpy array.
+        pd_dataframe (pandas.DataFrame): DataFrame containing the molecule data.
+    """
+
     def __init__(self, name, molecule_npy_arrays_dict):
+        """
+        Initializes the MD17Molecule with a name and a dictionary of numpy arrays.
+        Numpy2D_structured and pd_dataframe are set to None and have to be loaded separately if needed.
+
+        Args:
+            name (str): The name of the molecule.
+            molecule_npy_arrays_dict (dict): Dictionary of numpy arrays containing molecule data.
+        """
         self.name = name
-
         self.npy_arrays_dict = molecule_npy_arrays_dict
-
         self.flattened_npy_dtypes_dict = None
         self.flattened_npy_arrays_dict = None
-
         self.flattenArraysAndNames()
-
         self.numpy2D_structured = None
         self.pd_dataframe = None
 
     def __str__(self):
+        """
+        Returns a string representation of the molecule and its arrays.
+
+        Returns:
+            str: A string describing the molecule and its arrays.
+        """
         file_string = f'Molecule: {self.name}\n'
         for molecule_npy_key, molecule_npy_array in self.npy_arrays_dict.items():
-
             file_string += (f'Array: {molecule_npy_key}, '
                             f'Form: {molecule_npy_array.shape}, '
                             f'dtype: {molecule_npy_array.dtype}\n')
         return file_string
 
     def flattenArraysAndNames(self):
+        """
+        Flattens the numpy arrays and generates new names for the flattened arrays.
+        Index combinations are generated for each array and used to create new names.
+        """
         self.flattened_npy_arrays_dict = {}
         self.flattened_npy_dtypes_dict = {}
 
         for molecule_npy_key, molecule_npy_array in self.npy_arrays_dict.items():
-
             if molecule_npy_key == 'nuclear_charges':
                 continue
 
@@ -49,6 +73,9 @@ class MD17Molecule:
             self.flattened_npy_dtypes_dict[molecule_npy_key] = molecule_npy_dtype
 
     def load2DStructuredNumpy(self):
+        """
+        Loads the flattened numpy arrays into a 2D structured numpy array.
+        """
         npy_flattened_array_list = []
         npy_flattened_dtype_list = []
 
@@ -60,6 +87,9 @@ class MD17Molecule:
                                                                  dtype=npy_flattened_dtype_list)
 
     def loadDataFrame(self):
+        """
+        Loads the flattened numpy arrays into a pandas DataFrame.
+        """
         dataframes = []
         for (array, dtypes) in zip(self.flattened_npy_arrays_dict, self.flattened_npy_dtypes_dict):
             dtypes = [dtype[0] for dtype in dtypes]
