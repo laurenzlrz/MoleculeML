@@ -3,7 +3,7 @@ import pandas as pd
 from numpy.lib import recfunctions as rfn
 
 from Utility import generate_indices
-
+from src.dataset_management.GeometryData import GeometryData
 
 class MD17Molecule:
     """
@@ -18,7 +18,7 @@ class MD17Molecule:
         pd_dataframe (pandas.DataFrame): DataFrame containing the molecule data.
     """
 
-    def __init__(self, name, molecule_npy_arrays_dict):
+    def __init__(self, name, molecule_npy_arrays_dict, npz_array):
         """
         Initializes the MD17Molecule with a name and a dictionary of numpy arrays.
         Numpy2D_structured and pd_dataframe are set to None and have to be loaded separately if needed.
@@ -29,6 +29,8 @@ class MD17Molecule:
         """
         self.name = name
         self.npy_arrays_dict = molecule_npy_arrays_dict
+        self.npz_array = npz_array
+
         self.flattened_npy_dtypes_dict = None
         self.flattened_npy_arrays_dict = None
         self.flattenArraysAndNames()
@@ -72,7 +74,7 @@ class MD17Molecule:
             self.flattened_npy_arrays_dict[molecule_npy_key] = flattened
             self.flattened_npy_dtypes_dict[molecule_npy_key] = molecule_npy_dtype
 
-    def load2DStructuredNumpy(self):
+    def to2DStructuredNumpy(self):
         """
         Loads the flattened numpy arrays into a 2D structured numpy array.
         """
@@ -86,7 +88,7 @@ class MD17Molecule:
         self.numpy2D_structured = rfn.unstructured_to_structured(np.hstack(self.flattened_npy_arrays_dict),
                                                                  dtype=npy_flattened_dtype_list)
 
-    def loadDataFrame(self):
+    def toDataFrame(self):
         """
         Loads the flattened numpy arrays into a pandas DataFrame.
         """
@@ -96,3 +98,7 @@ class MD17Molecule:
             dataframes.append(pd.DataFrame(array, columns=dtypes))
 
         self.pd_dataframe = pd.concat(dataframes, axis=1)
+
+    def get_geometry_data(self):
+        return GeometryData(self.npy_arrays_dict['coords'], self.npy_arrays_dict['nuclear_charges'])
+

@@ -1,6 +1,6 @@
 import numpy as np
 
-from MD17MoleculeData import MD17Molecule
+from src.dataset_management.MD17MoleculeData import MD17Molecule
 
 # Path constants
 PATH_SEPARATOR = "/"
@@ -45,7 +45,7 @@ class MD17Dataloader:
         self.split = None
         self.max_split = None
 
-    def set_data_to_load(self, molecule_names, molecule_attributes):
+    def set_data_to_load(self, molecule_names=MOLECULE_NAMES, molecule_attributes=MOLECULE_ATTRIBUTES):
         """
         Sets the data to be loaded by specifying molecule names and attributes.
 
@@ -73,6 +73,16 @@ class MD17Dataloader:
         self.split = np.loadtxt(split_path, delimiter=',', dtype=int)
         self.max_split = np.max(self.split)
 
+    def set_random_split(self, selection_range, split_size):
+        """
+        Sets a random split of the given size.
+
+        Args:
+            split_size (int): The size of the random split.
+        """
+        self.split = np.random.choice(selection_range, split_size, replace=False)
+        self.max_split = np.max(self.split)
+
     def load_molecules(self):
         """
         Loads the molecule data from npz files and applies the split.
@@ -83,12 +93,13 @@ class MD17Dataloader:
 
             # Copies each selected (listed in molecule_attributes) array in the molecule_npz_array to a new dictionary
             # The split is applied to each array
-            molecule_npy_arrays_dict = {molecule_attribute: self.apply_split(molecule_npz_array[molecule_attribute])
+            molecule_npy_arrays_dict = {molecule_attribute: self.apply_sample(molecule_npz_array[molecule_attribute])
                                         for molecule_attribute in self.molecule_attributes}
 
-            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict)
+            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict,
+                                                              molecule_npz_array)
 
-    def apply_split(self, molecule_npy_array):
+    def apply_sample(self, molecule_npy_array):
         """
         Applies the split to the given numpy array.
 
@@ -103,8 +114,17 @@ class MD17Dataloader:
 
         return molecule_npy_array[self.split]
 
+    def get_molecule(self, molecule_name):
+        """
+        Returns the molecule with the given name.
 
-MD17_loader = MD17Dataloader()
-MD17_loader.set_data_to_load(MOLECULE_NAMES, MOLECULE_ATTRIBUTES)
-MD17_loader.load_split("train", 1)
-MD17_loader.load_molecules()
+        Args:
+            molecule_name (str): The name of the molecule to be returned.
+
+        Returns:
+            MD17Molecule: The molecule object with the given name.
+        """
+        return self.molecules_dict[molecule_name]
+
+
+
