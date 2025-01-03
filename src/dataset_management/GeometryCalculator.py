@@ -9,10 +9,15 @@ class GeometryCalculator(ABC):
     def calculate(self, geometries, elements):
         pass
 
+    @abstractmethod
+    def get_unit(self):
+        pass
+
 class EnergyCalculator(GeometryCalculator):
 
-    def __init__(self):
-        self.calculation_method = None
+    def __init__(self, calculation_method, unit):
+        self.calculation_method = calculation_method
+        self.unit = unit
 
     def calculate(self, geometries, elements):
         energy_calculation = lambda x: self.do_energy_calculation(x, elements)
@@ -25,5 +30,6 @@ class EnergyCalculator(GeometryCalculator):
         energy = molecule.get_total_energy()
         return energy
 
-    def set_calculation_method(self, calculation_method):
-        self.calculation_method = calculation_method
+    def get_unit(self):
+        return self.unit
+

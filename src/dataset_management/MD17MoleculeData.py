@@ -5,6 +5,9 @@ from numpy.lib import recfunctions as rfn
 from Utility import generate_indices
 from src.dataset_management.GeometryData import GeometryData
 
+
+DISTANCE_UNIT = 'Ang'
+
 class MD17Molecule:
     """
     A class used to represent a molecule and manage its data.
@@ -100,5 +103,5 @@ class MD17Molecule:
         self.pd_dataframe = pd.concat(dataframes, axis=1)
 
     def get_geometry_data(self):
-        return GeometryData(self.npy_arrays_dict['coords'], self.npy_arrays_dict['nuclear_charges'])
+        return GeometryData(self.npy_arrays_dict['coords'], DISTANCE_UNIT, self.npy_arrays_dict['nuclear_charges'])
 
