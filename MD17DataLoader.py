@@ -1,13 +1,17 @@
 import numpy as np
-from numpy.lib import recfunctions as rfn
+
 from MD17MoleculeData import MD17Molecule
 
-from Utility import generate_indices
+# Path constants
+PATH_SEPARATOR = "/"
 
 MOLECULE_DIRECTORY = "data/npz_data"
-DATA_SEPARATOR = "/"
-DATA_PREFIX = "rmd17_"
-DATA_SUFFIX = ".npz"
+MOLECULE_DATA_FORMAT_STRING = "rmd17_{molecule_name}.npz"
+
+SPLIT_DIRECTORY = "data/splits"
+SPLIT_DATA_FORMAT_STRING = "index_{usetype}_0{number}.csv"
+
+# Molecule constants
 MOLECULE_NAMES = ["aspirin", "azobenzene", "benzene", "ethanol", "malonaldehyde",
                   "naphthalene", "paracetamol", "salicylic", "toluene", "uracil"]
 
@@ -20,35 +24,88 @@ configured in the beginning.
 
 
 class MD17Dataloader:
+    """
+    A class used to load and manage MD17 molecule data.
+
+    Attributes:
+        molecules_npz_files (dict): Dictionary of molecule names and their corresponding npz file paths.
+        molecule_attributes (list): List of molecule attributes to be loaded.
+        molecules_dict (dict): Dictionary of molecule names and their corresponding MD17Molecule objects.
+        split (numpy.ndarray): Array of indices used to split the data.
+        max_split (int): Maximum index value in the split array.
+    """
 
     def __init__(self):
-        self.molecule_npz_files = None
+        """
+        Initializes the MD17Dataloader with default values.
+        """
+        self.molecules_npz_files = None
         self.molecule_attributes = None
-        self.molecule_npz_arrays = None
-        self.molecules = None
-        self.molecule_arrays = None
+        self.molecules_dict = None
+        self.split = None
+        self.max_split = None
 
-    ### Loading data from the files
     def set_data_to_load(self, molecule_names, molecule_attributes):
-        self.molecule_npz_files = {
-            molecule_name: MOLECULE_DIRECTORY + DATA_SEPARATOR + DATA_PREFIX + molecule_name + DATA_SUFFIX
+        """
+        Sets the data to be loaded by specifying molecule names and attributes.
+
+        Args:
+            molecule_names (list): List of molecule names to be loaded.
+            molecule_attributes (list): List of attributes to be loaded for each molecule.
+        """
+        self.molecules_npz_files = {
+            molecule_name: MOLECULE_DIRECTORY + PATH_SEPARATOR +
+                           MOLECULE_DATA_FORMAT_STRING.format(molecule_name=molecule_name)
             for molecule_name in molecule_names}
 
         self.molecule_attributes = molecule_attributes.copy()
 
-    def load_molecules(self):
-        self.molecules = {name: MD17Molecule(name, np.load(file), self.molecule_attributes.copy())
-                          for name, file in self.molecule_npz_files.items()}
+    def load_split(self, split_name, split_number):
+        """
+        Loads the split indices from a CSV file.
 
-    def get_data(self):
-        data = np.load(MOLECULE_DIRECTORY + DATA_SEPARATOR + DATA_PREFIX + "aspirin" + DATA_SUFFIX)
-        print(data.files)
+        Args:
+            split_name (str): The type of split (e.g., 'train', 'test').
+            split_number (int): The split number to be loaded.
+        """
+        split_path = (SPLIT_DIRECTORY + PATH_SEPARATOR +
+                      SPLIT_DATA_FORMAT_STRING.format(usetype=split_name, number=split_number))
+        self.split = np.loadtxt(split_path, delimiter=',', dtype=int)
+        self.max_split = np.max(self.split)
+
+    def load_molecules(self):
+        """
+        Loads the molecule data from npz files and applies the split.
+        """
+        self.molecules_dict = {}
+        for molecule_name, file in self.molecules_npz_files.items():
+            molecule_npz_array = np.load(file)
+
+            # Copies each selected (listed in molecule_attributes) array in the molecule_npz_array to a new dictionary
+            # The split is applied to each array
+            molecule_npy_arrays_dict = {molecule_attribute: self.apply_split(molecule_npz_array[molecule_attribute])
+                                        for molecule_attribute in self.molecule_attributes}
+
+            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict,
+                                                              self.molecule_attributes)
+
+    def apply_split(self, molecule_npy_array):
+        """
+        Applies the split to the given numpy array.
+
+        Args:
+            molecule_npy_array (numpy.ndarray): The numpy array to which the split will be applied.
+
+        Returns:
+            numpy.ndarray: The filtered numpy array after applying the split.
+        """
+        if self.split is None or len(molecule_npy_array) < self.max_split:
+            return molecule_npy_array
+
+        return molecule_npy_array[self.split]
 
 
 MD17_loader = MD17Dataloader()
 MD17_loader.set_data_to_load(MOLECULE_NAMES, MOLECULE_ATTRIBUTES)
+MD17_loader.load_split("train", 1)
 MD17_loader.load_molecules()
-print(MD17_loader.molecules["aspirin"].__str__())
-MD17_loader.molecules["aspirin"].load2DStructuredNumpy()
-MD17_loader.molecules["aspirin"].loadDataFrame()
-
