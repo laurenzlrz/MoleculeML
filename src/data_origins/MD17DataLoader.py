@@ -1,6 +1,9 @@
 import numpy as np
 
-from src.dataset_management.MD17MoleculeData import MD17Molecule
+from src.data_origins.AbstractDataLoader import AbstractDataLoader
+from src.data_origins.MD17MoleculeData import MD17Molecule
+from src.general.Units import Units
+from src.general.Property import Property
 
 # Path constants
 PATH_SEPARATOR = "/"
@@ -17,19 +20,32 @@ MOLECULE_NAMES = ["aspirin", "azobenzene", "benzene", "ethanol", "malonaldehyde"
 
 MOLECULE_ATTRIBUTES = ['nuclear_charges', 'coords', 'energies', 'forces', 'old_indices', 'old_energies', 'old_forces']
 
+ATTRIBUTE_UNITS = {'nuclear_charges': Units.CHARGE,
+                   'coords': Units.ANGSTROM,
+                   'energies': Units.KCALPERMOL,
+                   'forces': Units.KCALPERMOLANGSTROM,
+                   'old_indices': Units.ANGSTROM,
+                   'old_energies': Units.KCALPERMOL,
+                   'old_forces': Units.KCALPERMOLANGSTROM}
+
+ATTRIBUTE_KEYS = {Property.TOTAL_ENERGY: 'energies',
+                  Property.FORCES: 'forces',
+                  Property.COORDINATES: 'coords',
+                  Property.ELEMENTS: 'nuclear_charges'}
+
 """
 Dataloader is responsible to create data objects from downloaded files. Provides a dataobject in the end and can be
 configured in the beginning.
 """
 
 
-class MD17Dataloader:
+class MD17Dataloader(AbstractDataLoader):
     """
     A class used to load and manage MD17 molecule data.
 
     Attributes:
-        molecules_npz_files (dict): Dictionary of molecule names and their corresponding npz file paths.
-        molecule_attributes (list): List of molecule attributes to be loaded.
+        molecules_npz_file_paths (dict): Dictionary of molecule names and their corresponding npz file paths.
+        selected_molecule_attributes (list): List of molecule attributes to be loaded.
         molecules_dict (dict): Dictionary of molecule names and their corresponding MD17Molecule objects.
         split (numpy.ndarray): Array of indices used to split the data.
         max_split (int): Maximum index value in the split array.
@@ -39,11 +55,11 @@ class MD17Dataloader:
         """
         Initializes the MD17Dataloader with default values.
         """
-        self.molecules_npz_files = None
-        self.molecule_attributes = None
-        self.molecules_dict = None
+        self.molecules_npz_file_paths = None
+        self.selected_molecule_attributes = None
         self.split = None
         self.max_split = None
+        self.molecules_dict = None
 
     def set_data_to_load(self, molecule_names=MOLECULE_NAMES, molecule_attributes=MOLECULE_ATTRIBUTES):
         """
@@ -53,12 +69,12 @@ class MD17Dataloader:
             molecule_names (list): List of molecule names to be loaded.
             molecule_attributes (list): List of attributes to be loaded for each molecule.
         """
-        self.molecules_npz_files = {
-            molecule_name: MOLECULE_DIRECTORY + PATH_SEPARATOR +
-                           MOLECULE_DATA_FORMAT_STRING.format(molecule_name=molecule_name)
+        self.molecules_npz_file_paths = {
+            molecule_name: MOLECULE_DIRECTORY + PATH_SEPARATOR
+                           + MOLECULE_DATA_FORMAT_STRING.format(molecule_name=molecule_name)
             for molecule_name in molecule_names}
 
-        self.molecule_attributes = molecule_attributes.copy()
+        self.selected_molecule_attributes = molecule_attributes.copy()
 
     def load_split(self, split_name, split_number):
         """
@@ -79,6 +95,7 @@ class MD17Dataloader:
 
         Args:
             split_size (int): The size of the random split.
+            selection_range (int): The range of indices to select from.
         """
         self.split = np.random.choice(selection_range, split_size, replace=False)
         self.max_split = np.max(self.split)
@@ -88,16 +105,16 @@ class MD17Dataloader:
         Loads the molecule data from npz files and applies the split.
         """
         self.molecules_dict = {}
-        for molecule_name, file in self.molecules_npz_files.items():
+        for molecule_name, file in self.molecules_npz_file_paths.items():
             molecule_npz_array = np.load(file)
 
             # Copies each selected (listed in molecule_attributes) array in the molecule_npz_array to a new dictionary
             # The split is applied to each array
             molecule_npy_arrays_dict = {molecule_attribute: self.apply_sample(molecule_npz_array[molecule_attribute])
-                                        for molecule_attribute in self.molecule_attributes}
+                                        for molecule_attribute in self.selected_molecule_attributes}
 
             self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict,
-                                                              molecule_npz_array)
+                                                              molecule_npz_array, ATTRIBUTE_UNITS, ATTRIBUTE_KEYS)
 
     def apply_sample(self, molecule_npy_array):
         """
@@ -125,6 +142,3 @@ class MD17Dataloader:
             MD17Molecule: The molecule object with the given name.
         """
         return self.molecules_dict[molecule_name]
-
-
-

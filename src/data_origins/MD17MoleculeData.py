@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 from numpy.lib import recfunctions as rfn
 
-from Utility import generate_indices
-from src.dataset_management.GeometryData import GeometryData
+from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
+from src.general.Property import Property
+from src.general.Utility import generate_indices
+from src.data_representations.GeometryData import GeometryData
 
 
-DISTANCE_UNIT = 'Ang'
-
-class MD17Molecule:
+class MD17Molecule(AbstractMoleculeData):
     """
     A class used to represent a molecule and manage its data.
 
@@ -21,7 +21,7 @@ class MD17Molecule:
         pd_dataframe (pandas.DataFrame): DataFrame containing the molecule data.
     """
 
-    def __init__(self, name, molecule_npy_arrays_dict, npz_array):
+    def __init__(self, name, molecule_npy_arrays_dict, npz_array, units_dict, key_dict):
         """
         Initializes the MD17Molecule with a name and a dictionary of numpy arrays.
         Numpy2D_structured and pd_dataframe are set to None and have to be loaded separately if needed.
@@ -33,6 +33,8 @@ class MD17Molecule:
         self.name = name
         self.npy_arrays_dict = molecule_npy_arrays_dict
         self.npz_array = npz_array
+        self.units = units_dict
+        self.keys = key_dict
 
         self.flattened_npy_dtypes_dict = None
         self.flattened_npy_arrays_dict = None
@@ -102,6 +104,8 @@ class MD17Molecule:
 
         self.pd_dataframe = pd.concat(dataframes, axis=1)
 
-    def get_geometry_data(self):
-        return GeometryData(self.npy_arrays_dict['coords'], DISTANCE_UNIT, self.npy_arrays_dict['nuclear_charges'])
+    def getAttribute(self, attribute: Property):
+        return self.npy_arrays_dict[self.keys[attribute]]
 
+    def getUnit(self, attribute: Property):
+        return self.units[self.keys[attribute]]
