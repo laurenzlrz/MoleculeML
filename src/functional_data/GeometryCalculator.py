@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class GeometryCalculator(ABC):
     """
     Abstract base class for geometry calculations.
