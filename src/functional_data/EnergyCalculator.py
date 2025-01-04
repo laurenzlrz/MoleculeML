@@ -1,23 +1,20 @@
-from abc import ABC, abstractmethod
 from ase import Atoms
 
 import numpy as np
 
-class GeometryCalculator(ABC):
+from src.general.Property import Property
+from src.general.Units import Units
+from src.functional_data.GeometryCalculator import GeometryCalculator
 
-    @abstractmethod
-    def calculate(self, geometries, elements):
-        pass
+ENERGY_PROPERTY = Property.TOTAL_ENERGY
+ENERGY_UNIT = Units.EV
 
-    @abstractmethod
-    def get_unit(self):
-        pass
 
 class EnergyCalculator(GeometryCalculator):
 
-    def __init__(self, calculation_method, unit):
+    def __init__(self, calculation_method):
         self.calculation_method = calculation_method
-        self.unit = unit
+        super().__init__(ENERGY_UNIT, ENERGY_PROPERTY)
 
     def calculate(self, geometries, elements):
         energy_calculation = lambda x: self.do_energy_calculation(x, elements)
@@ -29,7 +26,3 @@ class EnergyCalculator(GeometryCalculator):
         molecule.calc = self.calculation_method
         energy = molecule.get_total_energy()
         return energy
-
-    def get_unit(self):
-        return self.unit
-
