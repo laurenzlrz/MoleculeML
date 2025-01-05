@@ -1,6 +1,7 @@
 from src.functional_data.GeometryCalculator import GeometryCalculator
 from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
 from src.general.Property import Property
+from src.data_origins.MD17MoleculeData import MD17Molecule
 
 ENERGY_KEY = Property.TOTAL_ENERGY
 
@@ -11,6 +12,7 @@ class GeometryData:
         self.geometry = molecule.getAttribute(Property.COORDINATES)
         self.geometry_unit = molecule.getUnit(Property.COORDINATES)
         self.elements = molecule.getAttribute(Property.ELEMENTS)
+        self.element_unit = molecule.getAttribute(Property.ELEMENTS)
 
         self.additional_attributes = {}
         self.additional_units = {}
@@ -39,8 +41,19 @@ class GeometryData:
     def get_elements(self):
         return self.elements
 
-    def get_corresponding_data(self):
+    def get_additional_attributes(self):
         return self.additional_attributes
 
-    def get_corresponding_data_units(self):
+    def get_additional_units(self):
         return self.additional_units
+
+    def to_molecule(self):
+        attribute_arrays = self.additional_attributes.copy()
+        attribute_arrays[Property.COORDINATES] = self.geometry
+        attribute_arrays[Property.ELEMENTS] = self.elements
+        attribute_units = self.additional_units.copy()
+        attribute_units[Property.COORDINATES] = self.geometry_unit
+        attribute_units[Property.ELEMENTS] = self.element_unit
+        return MD17Molecule(str(self.elements), attribute_arrays, attribute_units)
+
+

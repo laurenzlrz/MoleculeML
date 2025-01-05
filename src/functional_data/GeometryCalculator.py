@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from src.general.Property import Property
+from src.general.Units import Units
+from numpy import ndarray
 
 
 class GeometryCalculator(ABC):
@@ -6,8 +9,8 @@ class GeometryCalculator(ABC):
     Abstract base class for geometry calculations.
 
     Attributes:
-        unit (str): The unit of measurement.
-        key (str): The key identifier for the calculator.
+        unit (Units): The unit of measurement.
+        key (Property): The key identifier for the calculator.
     """
 
     def __init__(self, unit, key):
@@ -15,8 +18,8 @@ class GeometryCalculator(ABC):
         Initializes the GeometryCalculator with a unit and key.
 
         Args:
-            unit (str): The unit of measurement.
-            key (str): The key identifier for the calculator.
+            unit (Units): The unit of measurement.
+            key (Property): The key identifier for the calculator.
         """
         self.key = key
         self.unit = unit
@@ -27,8 +30,8 @@ class GeometryCalculator(ABC):
         Abstract method to perform geometry calculations.
 
         Args:
-            geometries (list): A list of geometries to be calculated.
-            elements (list): A list of elements involved in the calculation.
+            geometries (ndarray): A list of geometries to be calculated.
+            elements (ndarray): A list of elements involved in the calculation.
 
         Returns:
             The result of the geometry calculation.
@@ -40,7 +43,7 @@ class GeometryCalculator(ABC):
         Gets the unit of measurement.
 
         Returns:
-            str: The unit of measurement.
+            Unit: The unit of measurement.
         """
         return self.unit
 
@@ -49,6 +52,6 @@ class GeometryCalculator(ABC):
         Gets the key identifier for the calculator.
 
         Returns:
-            str: The key identifier for the calculator.
+            Property: The key identifier for the calculator.
         """
         return self.key

@@ -9,3 +9,6 @@ class Property(Enum):
     DIPOLE = 'dipole',
     ELEMENTS = 'elements',
     COORDINATES = 'coordinates',
+    OLD_ENERGIES = 'old_energies',
+    OLD_FORCES = 'old_forces',
+    OLD_ELEMENTS = 'old_elements',

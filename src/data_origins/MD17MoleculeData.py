@@ -5,7 +5,6 @@ from numpy.lib import recfunctions as rfn
 from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
 from src.general.Property import Property
 from src.general.Utility import generate_indices
-from src.data_representations.GeometryData import GeometryData
 
 
 class MD17Molecule(AbstractMoleculeData):
@@ -21,7 +20,7 @@ class MD17Molecule(AbstractMoleculeData):
         pd_dataframe (pandas.DataFrame): DataFrame containing the molecule data.
     """
 
-    def __init__(self, name, molecule_npy_arrays_dict, npz_array, units_dict, key_dict):
+    def __init__(self, name, molecule_npy_arrays_dict, units_dict):
         """
         Initializes the MD17Molecule with a name and a dictionary of numpy arrays.
         Numpy2D_structured and pd_dataframe are set to None and have to be loaded separately if needed.
@@ -32,9 +31,7 @@ class MD17Molecule(AbstractMoleculeData):
         """
         self.name = name
         self.npy_arrays_dict = molecule_npy_arrays_dict
-        self.npz_array = npz_array
         self.units = units_dict
-        self.keys = key_dict
 
         self.flattened_npy_dtypes_dict = None
         self.flattened_npy_arrays_dict = None
@@ -105,7 +102,7 @@ class MD17Molecule(AbstractMoleculeData):
         self.pd_dataframe = pd.concat(dataframes, axis=1)
 
     def getAttribute(self, attribute: Property):
-        return self.npy_arrays_dict[self.keys[attribute]]
+        return self.npy_arrays_dict[attribute]
 
     def getUnit(self, attribute: Property):
-        return self.units[self.keys[attribute]]
+        return self.units[attribute]

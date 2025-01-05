@@ -41,10 +41,10 @@ class EnergyGeometryData(SchnetData):
 
             if self.geometry_unit is None:
                 self.geometry_unit = geometry_object.get_geometry_unit()
-                self.prop_units = geometry_object.get_corresponding_data_units()
+                self.prop_units = geometry_object.get_additional_units()
             else:
                 assert_geo_unit = self.geometry_unit == geometry_object.get_geometry_unit()
-                assert_prop_units = self.prop_units == geometry_object.get_corresponding_data_units()
+                assert_prop_units = self.prop_units == geometry_object.get_additional_units()
                 if not assert_geo_unit or not assert_prop_units:
                     raise ValueError("Geometry units or property units do not match.")
 

@@ -18,20 +18,22 @@ SPLIT_DATA_FORMAT_STRING = "index_{usetype}_0{number}.csv"
 MOLECULE_NAMES = ["aspirin", "azobenzene", "benzene", "ethanol", "malonaldehyde",
                   "naphthalene", "paracetamol", "salicylic", "toluene", "uracil"]
 
-MOLECULE_ATTRIBUTES = ['nuclear_charges', 'coords', 'energies', 'forces', 'old_indices', 'old_energies', 'old_forces']
-
-ATTRIBUTE_UNITS = {'nuclear_charges': Units.CHARGE,
-                   'coords': Units.ANGSTROM,
-                   'energies': Units.KCALPERMOL,
-                   'forces': Units.KCALPERMOLANGSTROM,
-                   'old_indices': Units.ANGSTROM,
-                   'old_energies': Units.KCALPERMOL,
-                   'old_forces': Units.KCALPERMOLANGSTROM}
+ATTRIBUTE_UNITS = {Property.ELEMENTS: Units.CHARGE,
+                   Property.COORDINATES: Units.ANGSTROM,
+                   Property.TOTAL_ENERGY: Units.KCALPERMOL,
+                   Property.FORCES: Units.KCALPERMOLANGSTROM,
+                   Property.OLD_ELEMENTS: Units.CHARGE,
+                   Property.OLD_ENERGIES: Units.KCALPERMOL,
+                   Property.OLD_FORCES: Units.KCALPERMOLANGSTROM
+                   }
 
 ATTRIBUTE_KEYS = {Property.TOTAL_ENERGY: 'energies',
                   Property.FORCES: 'forces',
                   Property.COORDINATES: 'coords',
-                  Property.ELEMENTS: 'nuclear_charges'}
+                  Property.ELEMENTS: 'nuclear_charges',
+                  Property.OLD_ELEMENTS: 'old_indices',
+                  Property.OLD_ENERGIES: 'old_energies',
+                  Property.OLD_FORCES: 'old_forces'}
 
 """
 Dataloader is responsible to create data objects from downloaded files. Provides a dataobject in the end and can be
@@ -61,7 +63,7 @@ class MD17Dataloader(AbstractDataLoader):
         self.max_split = None
         self.molecules_dict = None
 
-    def set_data_to_load(self, molecule_names=MOLECULE_NAMES, molecule_attributes=MOLECULE_ATTRIBUTES):
+    def set_data_to_load(self, molecule_names=None, molecule_attributes=None):
         """
         Sets the data to be loaded by specifying molecule names and attributes.
 
@@ -69,9 +71,15 @@ class MD17Dataloader(AbstractDataLoader):
             molecule_names (list): List of molecule names to be loaded.
             molecule_attributes (list): List of attributes to be loaded for each molecule.
         """
+        if molecule_names is None:
+            molecule_names = MOLECULE_NAMES.copy()
+
+        if molecule_attributes is None:
+            molecule_attributes = list(ATTRIBUTE_KEYS.keys())
+
         self.molecules_npz_file_paths = {
-            molecule_name: MOLECULE_DIRECTORY + PATH_SEPARATOR
-                           + MOLECULE_DATA_FORMAT_STRING.format(molecule_name=molecule_name)
+            molecule_name: MOLECULE_DIRECTORY + PATH_SEPARATOR +
+            MOLECULE_DATA_FORMAT_STRING.format(molecule_name=molecule_name)
             for molecule_name in molecule_names}
 
         self.selected_molecule_attributes = molecule_attributes.copy()
@@ -110,11 +118,11 @@ class MD17Dataloader(AbstractDataLoader):
 
             # Copies each selected (listed in molecule_attributes) array in the molecule_npz_array to a new dictionary
             # The split is applied to each array
-            molecule_npy_arrays_dict = {molecule_attribute: self.apply_sample(molecule_npz_array[molecule_attribute])
+            molecule_npy_arrays_dict = {molecule_attribute:
+                                        self.apply_sample(molecule_npz_array[ATTRIBUTE_KEYS[molecule_attribute]])
                                         for molecule_attribute in self.selected_molecule_attributes}
 
-            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict,
-                                                              molecule_npz_array, ATTRIBUTE_UNITS, ATTRIBUTE_KEYS)
+            self.molecules_dict[molecule_name] = MD17Molecule(molecule_name, molecule_npy_arrays_dict, ATTRIBUTE_UNITS)
 
     def apply_sample(self, molecule_npy_array):
         """
