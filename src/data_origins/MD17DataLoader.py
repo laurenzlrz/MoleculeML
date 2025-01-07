@@ -8,7 +8,7 @@ from src.general.Property import Property
 # Path constants
 PATH_SEPARATOR = "/"
 
-MOLECULE_DIRECTORY = "data/npz_data"
+MOLECULE_DIRECTORY = "data/md17_data"
 MOLECULE_DATA_FORMAT_STRING = "rmd17_{molecule_name}.npz"
 
 SPLIT_DIRECTORY = "data/splits"

@@ -34,5 +34,5 @@ print("\n \n \n")
 res = calc.singlepoint()
 print(total_energy)
 
-numpy = np.load("../data/npz_data/rmd17_benzene.npz")["energies"]
+numpy = np.load("../data/md17_data/rmd17_benzene.npz")["energies"]
 print(numpy)

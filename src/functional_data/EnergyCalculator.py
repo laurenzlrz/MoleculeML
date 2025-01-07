@@ -38,6 +38,14 @@ class EnergyCalculator(GeometryCalculator):
             numpy.ndarray: An array of calculated energies for each geometry.
         """
         energy_calculation = lambda x: self.do_energy_calculation(x, elements)
+
+        #result = []
+        #for i in range(geometries.shape[0]):
+        #    print(f"Calculating energy for geometry {i + 1}...")
+        #    geometry = (geometries[i])
+        #    total_energy = energy_calculation(geometry)
+        #    result.append(total_energy)
+        #
         result = np.array([energy_calculation(geometries[i]) for i in range(geometries.shape[0])])
         return result
 

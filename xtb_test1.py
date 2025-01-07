@@ -4,6 +4,7 @@ from tblite.ase import TBLite
 from tblite.interface import Calculator
 from ase.calculators.morse import MorsePotential
 
+from src.general.Property import Property
 
 from src.data_origins.MD17DataLoader import MD17Dataloader
 from src.data_origins.MD17MoleculeData import MD17Molecule
@@ -15,9 +16,9 @@ MD17_loader.load_molecules()
 
 
 def visualise_molecule(molecule: MD17Molecule):
-    min_index = molecule.npy_arrays_dict['energies'].argmin()
-    elements = molecule.npy_arrays_dict['nuclear_charges']
-    min_positions = molecule.npy_arrays_dict['coords'][min_index]
+    min_index = molecule.npy_arrays_dict[Property.TOTAL_ENERGY].argmin()
+    elements = molecule.npy_arrays_dict[Property.ELEMENTS]
+    min_positions = molecule.npy_arrays_dict[Property.COORDINATES][min_index]
 
     atoms_MP = Atoms(numbers=elements, positions=min_positions)
     atoms_MP.calc = MorsePotential()
@@ -31,7 +32,7 @@ def visualise_molecule(molecule: MD17Molecule):
     res = calculator.singlepoint()
     CALC_enery = res.dict()
 
-    REF_energy = molecule.npy_arrays_dict['old_energies'][min_index]
+    REF_energy = molecule.npy_arrays_dict[Property.TOTAL_ENERGY][min_index]
 
     dict = {"Name" : molecule.name,
             "MP" : MP_energy, "XTB" : XTB_energy, "REF" : REF_energy, "CALC" : CALC_enery['energy'],
