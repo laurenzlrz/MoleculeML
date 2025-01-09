@@ -1,11 +1,17 @@
+import io
+import contextlib
+
 from ase import Atoms
 import numpy as np
+
 from src.general.Property import Property
 from src.general.Units import Units
 from src.functional_data.GeometryCalculator import GeometryCalculator
 
-ENERGY_PROPERTY = Property.TOTAL_ENERGY
+ENERGY_PROPERTY = Property.TOTAL_ENERGY_CALCULATED
 ENERGY_UNIT = Units.EV
+
+PRINT_CALCULATION = False
 
 
 class EnergyCalculator(GeometryCalculator):
@@ -39,14 +45,12 @@ class EnergyCalculator(GeometryCalculator):
         """
         energy_calculation = lambda x: self.do_energy_calculation(x, elements)
 
-        #result = []
-        #for i in range(geometries.shape[0]):
-        #    print(f"Calculating energy for geometry {i + 1}...")
-        #    geometry = (geometries[i])
-        #    total_energy = energy_calculation(geometry)
-        #    result.append(total_energy)
-        #
-        result = np.array([energy_calculation(geometries[i]) for i in range(geometries.shape[0])])
+        if PRINT_CALCULATION:
+            with io.StringIO() as buf, contextlib.redirect_stdout(buf):
+                result = np.array([energy_calculation(geometries[i]) for i in range(geometries.shape[0])])
+        else:
+            result = np.array([energy_calculation(geometries[i]) for i in range(geometries.shape[0])])
+
         return result
 
     def do_energy_calculation(self, geometry, elements):

@@ -5,5 +5,5 @@ class Units(Enum):
     CHARGE = 'charge'
     ANGSTROM = 'Ang'
     KCALPERMOL = 'kcal/mol'
-    KCALPERMOLANGSTROM = 'kcal/mol/ang'
+    KCALPERMOLANGSTROM = 'kcal/mol/Ang'
     EV = 'eV'

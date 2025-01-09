@@ -3,8 +3,9 @@ from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
 from src.general.Property import Property
 from src.data_origins.MD17MoleculeData import MD17Molecule
 
-ENERGY_KEY = Property.TOTAL_ENERGY
 
+ATTRIBUTE_ALREADY_EXISTING_MSG = "Attribute {attribute_key} already exists."
+ATTRIBUTE_NOT_EXISTING_MSG = "Attribute {attribute_key} does not exist."
 
 class GeometryData:
 
@@ -32,6 +33,20 @@ class GeometryData:
         self.additional_attributes[key] = geometry_calculator.calculate(self.geometry, self.elements)
         self.additional_units[key] = geometry_calculator.get_unit()
 
+    def add_attribute(self, attribute_key, attribute_array, attribute_unit):
+        if attribute_key in self.additional_attributes.keys():
+            raise KeyError(ATTRIBUTE_ALREADY_EXISTING_MSG.format(attribute_key=attribute_key))
+        self.additional_attributes[attribute_key] = attribute_array
+        self.additional_units[attribute_key] = attribute_unit
+
+    def replace_attribute(self, attribute_key, attribute_array, attribute_unit=None):
+        if attribute_key not in self.additional_attributes:
+            raise KeyError(ATTRIBUTE_NOT_EXISTING_MSG.format(attribute_key=attribute_key))
+
+        self.additional_attributes[attribute_key] = attribute_array
+        if attribute_unit is not None:
+            self.additional_units[attribute_key] = attribute_unit
+
     def get_geometries(self):
         return self.geometry
 
@@ -55,5 +70,3 @@ class GeometryData:
         attribute_units[Property.COORDINATES] = self.geometry_unit
         attribute_units[Property.ELEMENTS] = self.element_unit
         return MD17Molecule(str(self.elements), attribute_arrays, attribute_units)
-
-

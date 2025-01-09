@@ -8,5 +8,5 @@ class AbstractDataLoader(ABC):
         pass
 
     @abstractmethod
-    def get_molecule(self, molecule_name):
+    def get_molecules(self, molecule_names):
         pass

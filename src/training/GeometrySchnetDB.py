@@ -141,9 +141,14 @@ class GeometrySchnetDB:
                                           transforms=transforms, num_workers=num_workers, pin_memory=pin_memory,
                                           split_file=self.split_path)
         new_data_module.prepare_data()
+        print(self.schnet_db.units)
+        print(self.schnet_db.distance_unit)
         new_data_module.setup()
         self.schnet_data_module = new_data_module
         return new_data_module
+    def get_attribute_dimensions(self):
+        example_molecule_props = self.schnet_db[0]
+        return {Property(prop): example_molecule_props[prop].shape for prop in self.schnet_db.available_properties}
 
     def __str__(self):
         print_str = f"GeometrySchnetDB: {self.db_name} at {self.path}\n"

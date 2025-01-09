@@ -139,14 +139,14 @@ class MD17Dataloader(AbstractDataLoader):
 
         return molecule_npy_array[self.split]
 
-    def get_molecule(self, molecule_name):
+    def get_molecules(self, molecule_names) -> dict:
         """
         Returns the molecule with the given name.
 
         Args:
-            molecule_name (str): The name of the molecule to be returned.
+            molecule_names (List[str]): The name of the molecule to be returned.
 
         Returns:
-            MD17Molecule: The molecule object with the given name.
+            MD17Molecule: The molecule with the given name.
         """
-        return self.molecules_dict[molecule_name]
+        return {name: self.molecules_dict[name] for name in self.molecules_dict.keys() & molecule_names}

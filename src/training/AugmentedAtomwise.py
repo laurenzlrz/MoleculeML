@@ -21,7 +21,7 @@ class AugmentedAtomwise(Atomwise):
     def __init__(
             self,
             atoms_in: int,
-            properties_in: Optional[Dict[Property, int]] = None,
+            properties_in: Optional[Dict[str, int]] = None,
             n_out: int = 1,
             n_hidden: Optional[List[int]] = None,
             activation: Callable = F.silu,
@@ -67,9 +67,10 @@ class AugmentedAtomwise(Atomwise):
     def forward(self, inputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         # predict atomwise contributions
         atomwise_representations = inputs[self.atomwise_representation_key]
-        input_properties = [inputs[prop.value] for prop in self.properties_in.keys()]
+        input_properties = [inputs[prop] for prop in self.properties_in.keys()]
         elements_per_atom = inputs["_n_atoms"]
 
+        #TODO: Abstract Input batch splitting (idx_m, n_atoms) to a separate function
         y = self.outnet(elements_per_atom=elements_per_atom,
                         atoms=atomwise_representations,
                         additional_properties=input_properties)
@@ -91,8 +92,13 @@ class AugmentedAtomwise(Atomwise):
         inputs[self.output_key] = y
         return inputs
 
+    def set_outnet(self, outnet: nn.Module):
+        # Condition: outnet Input handles additional Inputs with the same properties
+        self.outnet = outnet
+
 
 INVALID_PROP_TENSOR_FORMAT_MSG = "Invalid format for property tensor. Expects either a 1-dim or 2-dim tensor."
+
 
 
 class AugmentedAtomwiseNN(nn.Module):
@@ -138,6 +144,7 @@ class AugmentedAtomwiseNN(nn.Module):
 
     def forward(self, elements_per_atom, atoms, additional_properties):
 
+        # TODO: change index calculation to rely on idx_m as done in atomwise.py
         def convert_shape(x, prop_size):
             if len(x.shape) == 1:
                 # Implies that input belongs to whole molecule and not per atom

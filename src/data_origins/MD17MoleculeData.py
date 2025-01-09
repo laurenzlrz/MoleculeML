@@ -35,7 +35,6 @@ class MD17Molecule(AbstractMoleculeData):
 
         self.flattened_npy_dtypes_dict = None
         self.flattened_npy_arrays_dict = None
-        self.flattenArraysAndNames()
         self.numpy2D_structured = None
         self.pd_dataframe = None
 
@@ -61,6 +60,8 @@ class MD17Molecule(AbstractMoleculeData):
         self.flattened_npy_arrays_dict = {}
         self.flattened_npy_dtypes_dict = {}
 
+        # TODO more abstract, so that the flattening is done in a more abstract way and
+        #  can be substantiated in concrete data subclasses
         for molecule_npy_key, molecule_npy_array in self.npy_arrays_dict.items():
             if molecule_npy_key == 'nuclear_charges':
                 continue
@@ -83,6 +84,8 @@ class MD17Molecule(AbstractMoleculeData):
         npy_flattened_array_list = []
         npy_flattened_dtype_list = []
 
+        self.flattenArraysAndNames()
+
         for key, value in self.flattened_npy_arrays_dict.items():
             npy_flattened_array_list.append(value)
             npy_flattened_dtype_list.extend(self.flattened_npy_dtypes_dict[key])
@@ -100,6 +103,14 @@ class MD17Molecule(AbstractMoleculeData):
             dataframes.append(pd.DataFrame(array, columns=dtypes))
 
         self.pd_dataframe = pd.concat(dataframes, axis=1)
+
+    def toArrayDict(self):
+        return self.npy_arrays_dict.copy()
+
+    def addAttribute(self, array, attribute_key, attribute_unit):
+        self.npy_arrays_dict[attribute_key] = array
+        self.units[attribute_key] = attribute_unit
+        # TODO add size check
 
     def getAttribute(self, attribute: Property):
         return self.npy_arrays_dict[attribute]
