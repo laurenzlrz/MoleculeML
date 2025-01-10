@@ -1,8 +1,8 @@
 from src.functional_data.AbstractProcessor import AbstractProcessor
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 
 UNIT_MISMATCH_MSG = "Unit of {attribute} must be {previous_unit}."
-ELEMENTS_KEY = Property.ELEMENTS
+ELEMENTS_KEY = MolProperty.ELEMENTS
 
 class ChangeUnitProcessor(AbstractProcessor):
     def __init__(self, attribute, previous_unit, result_unit, factor, atomwise=0):

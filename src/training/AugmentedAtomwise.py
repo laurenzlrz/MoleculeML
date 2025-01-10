@@ -9,7 +9,7 @@ import schnetpack as spk
 import schnetpack.nn as snn
 from schnetpack.atomistic.atomwise import Atomwise
 
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 import schnetpack.properties as properties
 
 

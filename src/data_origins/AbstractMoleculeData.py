@@ -4,7 +4,7 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 from src.general.Units import Units
 
 
@@ -19,7 +19,7 @@ class AbstractMoleculeData(ABC):
         pass
 
     @abstractmethod
-    def toArrayDict(self) -> Dict[Property, np.ndarray]:
+    def toArrayDict(self) -> Dict[MolProperty, np.ndarray]:
         pass
 
     @abstractmethod
@@ -27,11 +27,11 @@ class AbstractMoleculeData(ABC):
         pass
 
     @abstractmethod
-    def getAttribute(self, attribute: Property) -> np.array:
+    def getAttribute(self, attribute: MolProperty) -> np.array:
         pass
 
     @abstractmethod
-    def getUnit(self, attribute: Property) -> Units:
+    def getUnit(self, attribute: MolProperty) -> Units:
         pass
 
 

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 from src.general.Units import Units
 from numpy import ndarray
 
@@ -10,7 +10,7 @@ class GeometryCalculator(ABC):
 
     Attributes:
         unit (Units): The unit of measurement.
-        key (Property): The key identifier for the calculator.
+        key (MolProperty): The key identifier for the calculator.
     """
 
     def __init__(self, unit, key):
@@ -19,7 +19,7 @@ class GeometryCalculator(ABC):
 
         Args:
             unit (Units): The unit of measurement.
-            key (Property): The key identifier for the calculator.
+            key (MolProperty): The key identifier for the calculator.
         """
         self.key = key
         self.unit = unit
@@ -52,6 +52,6 @@ class GeometryCalculator(ABC):
         Gets the key identifier for the calculator.
 
         Returns:
-            Property: The key identifier for the calculator.
+            MolProperty: The key identifier for the calculator.
         """
         return self.key

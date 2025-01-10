@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Property(Enum):
+class MolProperty(Enum):
     TOTAL_ENERGY = 'total_energy'
     TOTAL_ENERGY_TRUTH = 'total_energy'
     TOTAL_ENERGY_CALCULATED = 'calculated_total_energy'

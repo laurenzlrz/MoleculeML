@@ -6,7 +6,7 @@ from ase import Atoms
 from schnetpack.data import ASEAtomsData
 from schnetpack.data import AtomsDataModule
 
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 from src.functional_data.GeometryData import GeometryData
 from src.general.Units import Units
 
@@ -78,7 +78,7 @@ class GeometrySchnetDB:
         Loads the units from the schnet database into class units and transforms into the enum format.
         :return:
         """
-        properties = [Property(prop) for prop in self.schnet_db.available_properties]
+        properties = [MolProperty(prop) for prop in self.schnet_db.available_properties]
         self.prop_units = {prop: Units(self.schnet_db.units[prop.value]) for prop in properties}
         self.geometry_unit = Units(self.schnet_db.distance_unit)
 
@@ -122,7 +122,7 @@ class GeometrySchnetDB:
     def get_schnet_db(self):
         return self.schnet_db
 
-    def create_schnet_module(self, selected_properties=None, batch_size=2, num_train=2, num_val=2,
+    def create_schnet_module(self, selected_properties=None, batch_size=2, num_train=6, num_val=4,
                              transforms=None, num_workers=1, pin_memory=True):
         if transforms is None:
             transforms = []
@@ -148,7 +148,7 @@ class GeometrySchnetDB:
         return new_data_module
     def get_attribute_dimensions(self):
         example_molecule_props = self.schnet_db[0]
-        return {Property(prop): example_molecule_props[prop].shape for prop in self.schnet_db.available_properties}
+        return {MolProperty(prop): example_molecule_props[prop].shape for prop in self.schnet_db.available_properties}
 
     def __str__(self):
         print_str = f"GeometrySchnetDB: {self.db_name} at {self.path}\n"

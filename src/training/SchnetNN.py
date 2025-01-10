@@ -5,13 +5,19 @@ import schnetpack.transform as trn
 import torch
 import torchmetrics
 from pytorch_lightning import loggers, Trainer
+from pytorch_lightning.profilers import PyTorchProfiler
 
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
+from src.general.NNMetrics import NNMetrics
+from src.general.NNProperty import NNProperty
 from src.training.AugmentedAtomwise import AugmentedAtomwise
 
 import torch.nn as nn
 from schnetpack.nn import Dense
 from src.training.AdditionOutput import AdditionOutputModule
+
+from src.LoggerCallback import EpochMetricsCallback, LoggerSaverCallback
+from torchmetrics import MeanSquaredError, R2Score, MeanAbsoluteError, NormalizedRootMeanSquaredError
 
 DIM_NOT_FLATTENED_MSG = ("Dimensions of the additional input properties are not flattened, "
                          "therefore not possible to use them as input for the neural network.")
@@ -30,6 +36,11 @@ DEF_BEST_SAVES = 1
 MAE_LABEL = "MAE"
 LEARNING_RATE_LABEL = "lr"
 STD_MONITOR = "val_loss"
+
+DEF_METRICS = {NNMetrics.MAE: torchmetrics.MeanAbsoluteError,
+               NNMetrics.MSE: torchmetrics.MeanSquaredError,
+               NNMetrics.R2: torchmetrics.R2Score,
+               NNMetrics.NRMSE: torchmetrics.NormalizedRootMeanSquaredError}
 
 
 class AdditionSchnetNN:
@@ -75,7 +86,8 @@ class SchnetNN:
                                             output_key=prediction_key.value)
             self.output_modules.append(pred_module)
 
-        self.output_modules.extend(individual_output_modules)
+        if individual_output_modules is not None:
+            self.output_modules.extend(individual_output_modules)
 
         # Force example from schnetpack
         """
@@ -111,14 +123,15 @@ class SchnetNN:
         if measure_keys is None:
             measure_keys = self.prediction_keys
 
+        metrics = {metric.value: calc() for metric, calc in DEF_METRICS.items()}
+
+        # TODO Questions how to log for classification tasks, e.g. the accuracy because it is not a scalar value
         for measure_key in measure_keys:
             self.output_heads.append(spk.task.ModelOutput(
                 name=measure_key.value,
                 loss_fn=torch.nn.MSELoss(),
                 loss_weight=1.,
-                metrics={
-                    MAE_LABEL: torchmetrics.MeanAbsoluteError()
-                })
+                metrics=metrics)
             )
 
         self.task = spk.task.AtomisticTask(
@@ -128,25 +141,30 @@ class SchnetNN:
             optimizer_args={LEARNING_RATE_LABEL: DEF_LEARNING_RATE}
         )
 
+        self.logger_saver_callback = LoggerSaverCallback(list(DEF_METRICS.keys()))
+        self.epoch_metrics_callback = EpochMetricsCallback()
+
+        # TODO Use Tensorboard Logger and implement computational graph logging
         self.logger = loggers.TensorBoardLogger(SAVE_DIR, name=LOG_DIR_NAME)
         self.callbacks = [
             spk.train.ModelCheckpoint(
                 model_path=os.path.join(SAVE_DIR, BEST_MODEL_NAME),
                 save_top_k=DEF_BEST_SAVES,
                 monitor=STD_MONITOR
-            )
+            ), self.logger_saver_callback, self.epoch_metrics_callback
         ]
 
         self.trainer = Trainer(
+            log_every_n_steps=2,
             callbacks=self.callbacks,
             logger=self.logger,
             default_root_dir=SAVE_DIR,
-            max_epochs=3,  # for testing, we restrict the number of epochs
+            max_epochs=3,
         )
 
         self.transforms = [
             trn.ASENeighborList(cutoff=5.),
-            trn.RemoveOffsets(Property.TOTAL_ENERGY.value, remove_mean=True, remove_atomrefs=False),
+            trn.RemoveOffsets(MolProperty.TOTAL_ENERGY.value, remove_mean=True, remove_atomrefs=False),
             trn.CastTo32()
         ]
 
@@ -156,57 +174,19 @@ class SchnetNN:
     def train(self, data_module):
         self.trainer.fit(self.task, datamodule=data_module)
 
+    def summary(self):
+        total_params = sum(p.numel() for p in self.network.parameters())
+        trainable_params = sum(p.numel() for p in self.network.parameters() if p.requires_grad)
+        optimizer = str(self.task.configure_optimizers())
 
-def test_train(module):
-    custom_energy_output = AugmentedAtomwise(atoms_in=DEF_ATOM_BASIS_SIZE, properties_in={Property.OLD_ENERGIES: 1},
-                                             n_out=1,
-                                             output_key=Property.TOTAL_ENERGY.value)
-
-    pairwise_distance = spk.atomistic.PairwiseDistances()  # calculates pairwise distances between atoms
-    radial_basis = spk.nn.GaussianRBF(n_rbf=10, cutoff=DEF_CUTOFF)
-    schnet = spk.representation.SchNet(
-        n_atom_basis=DEF_ATOM_BASIS_SIZE, n_interactions=1,
-        radial_basis=radial_basis,
-        cutoff_fn=spk.nn.CosineCutoff(DEF_CUTOFF)
-    )
-    pred_total_energy = spk.atomistic.Atomwise(n_in=DEF_ATOM_BASIS_SIZE, output_key=Property.TOTAL_ENERGY.value)
-
-    nnpot = spk.model.NeuralNetworkPotential(
-        representation=schnet,
-        input_modules=[pairwise_distance],
-        output_modules=[custom_energy_output],
-        postprocessors=[trn.CastTo64()]
-    )
-
-    output_Te = spk.task.ModelOutput(
-        name=Property.TOTAL_ENERGY.value,
-        loss_fn=torch.nn.MSELoss(),
-        loss_weight=1.,
-        metrics={
-            "MAE": torchmetrics.MeanAbsoluteError()
+        summary = {
+            NNProperty.MAX_EPOCHS: self.trainer.max_epochs,
+            NNProperty.DEVICES: self.trainer.device_ids,
+            NNProperty.STRATEGY: self.trainer.strategy,
+            NNProperty.PRECISION: self.trainer.precision,
+            NNProperty.TOTAL_PARAMETERS: total_params,
+            NNProperty.TRAINABLE_PARAMETERS: trainable_params,
+            NNProperty.OPTIMIZER: optimizer
         }
-    )
 
-    task = spk.task.AtomisticTask(
-        model=nnpot,
-        outputs=[output_Te],
-        optimizer_cls=torch.optim.AdamW,
-        optimizer_args={"lr": 1e-4}
-    )
-
-    logger = loggers.TensorBoardLogger(SAVE_DIR, name=LOG_DIR_NAME)
-    callbacks = [
-        spk.train.ModelCheckpoint(
-            model_path=os.path.join(SAVE_DIR, BEST_MODEL_NAME),
-            save_top_k=1,
-            monitor="val_loss"
-        )
-    ]
-
-    trainer = Trainer(
-        callbacks=callbacks,
-        logger=logger,
-        default_root_dir=SAVE_DIR,
-        max_epochs=3,  # for testing, we restrict the number of epochs
-    )
-    return trainer.fit(task, datamodule=module)
+        return summary

@@ -11,11 +11,11 @@ from src.functional_data.DifferenceProcessor import DifferenceProcessor
 from src.functional_data.ChangeUnitProcessor import ChangeUnitProcessor
 
 from src.general.Units import Units
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-DEF_SELECTED_ATTRIBUTES = [Property.TOTAL_ENERGY, Property.OLD_ENERGIES, Property.FORCES]
+DEF_SELECTED_ATTRIBUTES = [MolProperty.TOTAL_ENERGY, MolProperty.OLD_ENERGIES, MolProperty.FORCES]
 DEF_SELECTED_MOLECULES = ['aspirin']
 DB_NAME = "Geometry5"
 
@@ -57,14 +57,14 @@ class AtomProcessPipeline:
         geometry_calculator = EnergyCalculator(TBLite(method="GFN2-xTB"))
         [geometry_object.perform_calculations(geometry_calculator) for geometry_object in self.molecule_geo_objects]
 
-        change_unit_processor = ChangeUnitProcessor(attribute=Property.TOTAL_ENERGY_CALCULATED,
+        change_unit_processor = ChangeUnitProcessor(attribute=MolProperty.TOTAL_ENERGY_CALCULATED,
                                                     previous_unit=Units.EV,
                                                     result_unit=Units.KCALPERMOL,
                                                     factor=23.0621, atomwise=1)
         [change_unit_processor.calculate(geometry_object) for geometry_object in self.molecule_geo_objects]
 
-        difference_processor = DifferenceProcessor(attribute1=Property.TOTAL_ENERGY_TRUTH,
-                                                   attribute2=Property.TOTAL_ENERGY_CALCULATED,
-                                                   result_attribute=Property.TOTAL_ENERGY_DIFFERENCE)
+        difference_processor = DifferenceProcessor(attribute1=MolProperty.TOTAL_ENERGY_TRUTH,
+                                                   attribute2=MolProperty.TOTAL_ENERGY_CALCULATED,
+                                                   result_attribute=MolProperty.TOTAL_ENERGY_DIFFERENCE)
 
         [difference_processor.calculate(geometry_object) for geometry_object in self.molecule_geo_objects]

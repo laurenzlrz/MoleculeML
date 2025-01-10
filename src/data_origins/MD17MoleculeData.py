@@ -3,7 +3,7 @@ import pandas as pd
 from numpy.lib import recfunctions as rfn
 
 from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 from src.general.Utility import generate_indices
 
 
@@ -112,8 +112,8 @@ class MD17Molecule(AbstractMoleculeData):
         self.units[attribute_key] = attribute_unit
         # TODO add size check
 
-    def getAttribute(self, attribute: Property):
+    def getAttribute(self, attribute: MolProperty):
         return self.npy_arrays_dict[attribute]
 
-    def getUnit(self, attribute: Property):
+    def getUnit(self, attribute: MolProperty):
         return self.units[attribute]

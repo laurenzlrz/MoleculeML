@@ -3,7 +3,7 @@ import numpy as np
 from src.data_origins.AbstractDataLoader import AbstractDataLoader
 from src.data_origins.MD17MoleculeData import MD17Molecule
 from src.general.Units import Units
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 
 # Path constants
 PATH_SEPARATOR = "/"
@@ -18,22 +18,22 @@ SPLIT_DATA_FORMAT_STRING = "index_{usetype}_0{number}.csv"
 MOLECULE_NAMES = ["aspirin", "azobenzene", "benzene", "ethanol", "malonaldehyde",
                   "naphthalene", "paracetamol", "salicylic", "toluene", "uracil"]
 
-ATTRIBUTE_UNITS = {Property.ELEMENTS: Units.CHARGE,
-                   Property.COORDINATES: Units.ANGSTROM,
-                   Property.TOTAL_ENERGY: Units.KCALPERMOL,
-                   Property.FORCES: Units.KCALPERMOLANGSTROM,
-                   Property.OLD_ELEMENTS: Units.CHARGE,
-                   Property.OLD_ENERGIES: Units.KCALPERMOL,
-                   Property.OLD_FORCES: Units.KCALPERMOLANGSTROM
+ATTRIBUTE_UNITS = {MolProperty.ELEMENTS: Units.CHARGE,
+                   MolProperty.COORDINATES: Units.ANGSTROM,
+                   MolProperty.TOTAL_ENERGY: Units.KCALPERMOL,
+                   MolProperty.FORCES: Units.KCALPERMOLANGSTROM,
+                   MolProperty.OLD_ELEMENTS: Units.CHARGE,
+                   MolProperty.OLD_ENERGIES: Units.KCALPERMOL,
+                   MolProperty.OLD_FORCES: Units.KCALPERMOLANGSTROM
                    }
 
-ATTRIBUTE_KEYS = {Property.TOTAL_ENERGY: 'energies',
-                  Property.FORCES: 'forces',
-                  Property.COORDINATES: 'coords',
-                  Property.ELEMENTS: 'nuclear_charges',
-                  Property.OLD_ELEMENTS: 'old_indices',
-                  Property.OLD_ENERGIES: 'old_energies',
-                  Property.OLD_FORCES: 'old_forces'}
+ATTRIBUTE_KEYS = {MolProperty.TOTAL_ENERGY: 'energies',
+                  MolProperty.FORCES: 'forces',
+                  MolProperty.COORDINATES: 'coords',
+                  MolProperty.ELEMENTS: 'nuclear_charges',
+                  MolProperty.OLD_ELEMENTS: 'old_indices',
+                  MolProperty.OLD_ENERGIES: 'old_energies',
+                  MolProperty.OLD_FORCES: 'old_forces'}
 
 """
 Dataloader is responsible to create data objects from downloaded files. Provides a dataobject in the end and can be

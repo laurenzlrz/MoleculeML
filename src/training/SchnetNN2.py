@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 
 
 

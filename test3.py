@@ -11,7 +11,7 @@ from src.functional_data.GeometryData import GeometryData
 from src.data_origins.MD17DataLoader import MD17Dataloader
 from src.training.SchnetNN import test_train
 from schnetpack.transform import RemoveOffsets
-from src.general.Property import Property
+from src.general.MolProperty import MolProperty
 
 def print_db(dataset, data_module):
     print("\n\nAvailable properties:\n")
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     geometrySchnetDB = geometrySchnetDBHandler.get_schnet_db()
 
     data_module = geometrySchnetDBHandler.create_schnet_module(pin_memory=False,
-                                                               transforms=[RemoveOffsets(Property.TOTAL_ENERGY.value, remove_mean=True,
-                                                                                      remove_atomrefs=True)])
+                                                               transforms=[RemoveOffsets(MolProperty.TOTAL_ENERGY.value, remove_mean=True,
+                                                                                         remove_atomrefs=True)])
     print("\n\n TRAINING \n\n")
     test_train(geometrySchnetDB, data_module)
