@@ -6,9 +6,9 @@ from ase import Atoms
 from schnetpack.data import ASEAtomsData
 from schnetpack.data import AtomsDataModule
 
-from src.general.MolProperty import MolProperty
+from src.general.props.MolProperty import MolProperty
 from src.functional_data.GeometryData import GeometryData
-from src.general.Units import Units
+from src.general.props.Units import Units
 
 DB_NAME_TEMPLATE = "schnet_db_{}.db"
 DB_SPLIT_TEMPLATE = "schnet_split_{}.npz"
@@ -22,13 +22,16 @@ FILE_EXISTS_MSG = "Database {path} already exists, set overwrite_db to True to o
 class GeometrySchnetDB:
 
     @staticmethod
-    def create_new(db_name, geometry_objects: List[GeometryData], overwrite_db=True):
-        self = GeometrySchnetDB(db_name)
+    def create_new(db_name, db_path=None, geometry_objects: List[GeometryData]=None, overwrite_db=True):
+        self = GeometrySchnetDB(db_name, db_path)
         if os.path.exists(self.path):
             if overwrite_db:
                 os.remove(self.path)
             else:
                 raise FileExistsError(FILE_EXISTS_MSG.format(path=self.path))
+
+        if geometry_objects is None:
+            raise ValueError(NO_GEO_OBJECTS_MSG)
 
         self._create_not_existing_db(geometry_objects[0].get_geometry_unit(),
                                      geometry_objects[0].get_additional_units())
@@ -36,14 +39,18 @@ class GeometrySchnetDB:
         return self
 
     @staticmethod
-    def load_existing(db_name):
-        self = GeometrySchnetDB(db_name)
+    def load_existing(db_name, path=None):
+        self = GeometrySchnetDB(db_name, path)
         self._load_existing_db()
         return self
 
-    def __init__(self, db_name):
+    def __init__(self, db_name, path=None):
         self.db_name = db_name
-        self.path = DB_PATH + DB_NAME_TEMPLATE.format(self.db_name)
+        self.path = path
+        if path is None:
+            self.path = DB_PATH + DB_NAME_TEMPLATE.format(self.db_name)
+        else:
+            self.path = path + DB_NAME_TEMPLATE.format(self.db_name)
         self.split_path = DB_PATH + DB_SPLIT_TEMPLATE.format(self.db_name)
 
         self.geometry_objects = []  # temporary
@@ -54,6 +61,7 @@ class GeometrySchnetDB:
         self.schnet_data_module = None
 
     def _load_existing_db(self):
+        print(self.path)
         self.schnet_db = ASEAtomsData(self.path)
         self._load_units_from_db()
 
@@ -123,29 +131,35 @@ class GeometrySchnetDB:
         return self.schnet_db
 
     def create_schnet_module(self, selected_properties=None, batch_size=2, num_train=6, num_val=4,
-                             transforms=None, num_workers=1, pin_memory=True):
+                             transforms=None, num_workers=1, pin_memory=True, split_path=None):
         if transforms is None:
             transforms = []
 
+        if split_path is None:
+            split_path = self.split_path
+
         # Only use selected properties and convert them from enums to strings
+        # TODO Add check if selected properties are in available properties
         if selected_properties is None:
             selected_unit_dict = {prop.value: prop_unit.value for prop, prop_unit in self.prop_units.items()}
         else:
             selected_unit_dict = {prop.value: self.prop_units[prop].value for prop in selected_properties}
 
+        print(self.path)
         new_data_module = AtomsDataModule(self.path,
                                           distance_unit=self.geometry_unit.value,
                                           property_units=selected_unit_dict,
                                           load_properties=list(selected_unit_dict.keys()),
                                           batch_size=batch_size, num_train=num_train, num_val=num_val,
                                           transforms=transforms, num_workers=num_workers, pin_memory=pin_memory,
-                                          split_file=self.split_path)
+                                          split_file=split_path)
         new_data_module.prepare_data()
         print(self.schnet_db.units)
         print(self.schnet_db.distance_unit)
         new_data_module.setup()
         self.schnet_data_module = new_data_module
         return new_data_module
+
     def get_attribute_dimensions(self):
         example_molecule_props = self.schnet_db[0]
         return {MolProperty(prop): example_molecule_props[prop].shape for prop in self.schnet_db.available_properties}

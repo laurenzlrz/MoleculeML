@@ -1,8 +1,8 @@
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
+from src.general.props.NNMetric import NNMetrics
+from src.visualisation.TrainingVisualisation import VisualisationTensorboardLoader, TrainingVisualisation
+import src.general.utils.VisualisationUtility as vu
 
 class ModelVisualisation:
 
@@ -23,9 +23,17 @@ class ModelVisualisation:
 
         return scalars
 
-SAVE_DIR = "data/schnet_data/schnet_logs/version_68"
-if __name__ == "__main__":
+
+SAVE_DIR = "data/training/model1_3/logger/logging/version_0"
+if __name__ == "__man__":
     vis = ModelVisualisation()
     vis = (vis.visualise(SAVE_DIR))
     print(vis)
 
+if __name__ == "__main__":
+    vis = VisualisationTensorboardLoader()
+    vis.load_from_file(SAVE_DIR)
+    data = vis.get_epoch_data()
+    vis = TrainingVisualisation("data/vis", axis_scaling=vu.scale_axis_to_zero)
+    vis.set_epoch_data(data)
+    vis.print_epochs()

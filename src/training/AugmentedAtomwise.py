@@ -1,17 +1,14 @@
 import math
-from typing import Optional, Union, Sequence, Callable, Dict, List
+from typing import Optional, Callable, Dict, List
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import schnetpack as spk
 import schnetpack.nn as snn
 from schnetpack.atomistic.atomwise import Atomwise
 
-from src.general.MolProperty import MolProperty
 import schnetpack.properties as properties
-
 
 DEF_ATOMWISE_REPR_KEY = "scalar_representation"
 
@@ -70,7 +67,7 @@ class AugmentedAtomwise(Atomwise):
         input_properties = [inputs[prop] for prop in self.properties_in.keys()]
         elements_per_atom = inputs["_n_atoms"]
 
-        #TODO: Abstract Input batch splitting (idx_m, n_atoms) to a separate function
+        # TODO: Abstract Input batch splitting (idx_m, n_atoms) to a separate function
         y = self.outnet(elements_per_atom=elements_per_atom,
                         atoms=atomwise_representations,
                         additional_properties=input_properties)
@@ -98,7 +95,6 @@ class AugmentedAtomwise(Atomwise):
 
 
 INVALID_PROP_TENSOR_FORMAT_MSG = "Invalid format for property tensor. Expects either a 1-dim or 2-dim tensor."
-
 
 
 class AugmentedAtomwiseNN(nn.Module):

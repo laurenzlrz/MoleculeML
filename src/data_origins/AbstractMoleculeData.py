@@ -4,8 +4,8 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-from src.general.MolProperty import MolProperty
-from src.general.Units import Units
+from src.general.props.MolProperty import MolProperty
+from src.general.props.Units import Units
 
 
 class AbstractMoleculeData(ABC):

@@ -1,21 +1,10 @@
-import faulthandler
 import os
-
-import pandas as pd
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-import schnetpack.transform as trn
-from tblite.ase import TBLite
-
-from src.general.MolProperty import MolProperty
+from src.general.props.MolProperty import MolProperty
 from src.training.GeometrySchnetDB import GeometrySchnetDB
-from src.functional_data.EnergyCalculator import EnergyCalculator
-from src.functional_data.GeometryData import GeometryData
-from src.data_origins.MD17DataLoader import MD17Dataloader
 from src.training.SchnetNN import SchnetNN
-
-from src.pipeline.AtomProcessPipeline import AtomProcessPipeline
 
 DB_NAME = "Geometry5"
 

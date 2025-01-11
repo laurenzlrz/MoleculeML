@@ -1,6 +1,6 @@
 from src.functional_data.GeometryCalculator import GeometryCalculator
 from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
-from src.general.MolProperty import MolProperty
+from src.general.props.MolProperty import MolProperty
 from src.data_origins.MD17MoleculeData import MD17Molecule
 
 

@@ -5,7 +5,10 @@ class NNMetrics(Enum):
     MAE = "MAE"
     R2 = "R2"
     NRMSE = "NRMSE"
+    LOSS = "loss"
     EPOCH_TIME = "epoch_time"
     EPOCH_MEMORY = "epoch_memory"
     EPOCH_GPU_MEMORY = "epoch_gpu_memory"
+    EPOCH = "epoch"
+    STEP = "step"
 

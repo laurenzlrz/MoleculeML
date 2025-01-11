@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from src.general.MolProperty import MolProperty
-from src.general.Units import Units
+from src.general.props.Units import Units
 from numpy import ndarray
 
 

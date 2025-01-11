@@ -2,8 +2,8 @@ import numpy as np
 
 from src.data_origins.AbstractDataLoader import AbstractDataLoader
 from src.data_origins.MD17MoleculeData import MD17Molecule
-from src.general.Units import Units
-from src.general.MolProperty import MolProperty
+from src.general.props.Units import Units
+from src.general.props.MolProperty import MolProperty
 
 # Path constants
 PATH_SEPARATOR = "/"

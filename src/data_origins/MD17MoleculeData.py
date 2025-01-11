@@ -3,8 +3,8 @@ import pandas as pd
 from numpy.lib import recfunctions as rfn
 
 from src.data_origins.AbstractMoleculeData import AbstractMoleculeData
-from src.general.MolProperty import MolProperty
-from src.general.Utility import generate_indices
+from src.general.props.MolProperty import MolProperty
+from src.general.utils.Utility import generate_indices
 
 
 class MD17Molecule(AbstractMoleculeData):

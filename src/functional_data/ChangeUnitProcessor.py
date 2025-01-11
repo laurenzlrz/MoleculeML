@@ -1,5 +1,5 @@
 from src.functional_data.AbstractProcessor import AbstractProcessor
-from src.general.MolProperty import MolProperty
+from src.general.props.MolProperty import MolProperty
 
 UNIT_MISMATCH_MSG = "Unit of {attribute} must be {previous_unit}."
 ELEMENTS_KEY = MolProperty.ELEMENTS

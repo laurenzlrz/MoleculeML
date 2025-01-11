@@ -4,8 +4,8 @@ import contextlib
 from ase import Atoms
 import numpy as np
 
-from src.general.MolProperty import MolProperty
-from src.general.Units import Units
+from src.general.props.MolProperty import MolProperty
+from src.general.props.Units import Units
 from src.functional_data.GeometryCalculator import GeometryCalculator
 
 ENERGY_PROPERTY = MolProperty.TOTAL_ENERGY_CALCULATED

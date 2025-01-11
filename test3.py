@@ -11,7 +11,7 @@ from src.functional_data.GeometryData import GeometryData
 from src.data_origins.MD17DataLoader import MD17Dataloader
 from src.training.SchnetNN import test_train
 from schnetpack.transform import RemoveOffsets
-from src.general.MolProperty import MolProperty
+from src.general.props.MolProperty import MolProperty
 
 def print_db(dataset, data_module):
     print("\n\nAvailable properties:\n")

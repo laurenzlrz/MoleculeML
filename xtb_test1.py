@@ -4,7 +4,7 @@ from tblite.ase import TBLite
 from tblite.interface import Calculator
 from ase.calculators.morse import MorsePotential
 
-from src.general.MolProperty import MolProperty
+from src.general.props.MolProperty import MolProperty
 
 from src.data_origins.MD17DataLoader import MD17Dataloader
 from src.data_origins.MD17MoleculeData import MD17Molecule

@@ -10,8 +10,8 @@ from src.data_origins.MD17DataLoader import MD17Dataloader
 from src.functional_data.DifferenceProcessor import DifferenceProcessor
 from src.functional_data.ChangeUnitProcessor import ChangeUnitProcessor
 
-from src.general.Units import Units
-from src.general.MolProperty import MolProperty
+from src.general.props.Units import Units
+from src.general.props.MolProperty import MolProperty
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 

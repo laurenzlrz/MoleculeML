@@ -1,6 +1,7 @@
 from enum import Enum
 
 class NNProperty(Enum):
+    NAME = "name"
     MAX_EPOCHS = "max_epochs"
     DEVICES = "devices"
     STRATEGY = "strategy"
