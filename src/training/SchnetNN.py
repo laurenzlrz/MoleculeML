@@ -180,15 +180,15 @@ class AdditionSchnetNN(SchnetNN):
     def __init__(self, name, additional_input_keys, prediction_keys, measure_keys, add1, add2, output,
                  atom_basis_size=DEF_ATOM_BASIS_SIZE, num_of_interactions=DEF_NUM_OF_INTERACTIONS,
                  rbf_basis_size=DEF_RBF_BASIS_SIZE, cut_off=DEF_CUTOFF, learning_rate=DEF_LEARNING_RATE):
-        add_function = lambda x: x[0] + x[1]
         self.measure_keys = measure_keys
-        self.add_module = AdditionOutputModule([add1, add2], output, add_function)
+        self.add_module = AdditionOutputModule([add1.value, add2.value], output.value, add_function)
         super(AdditionSchnetNN, self).__init__(name, additional_input_keys, prediction_keys, atom_basis_size,
                                                num_of_interactions, rbf_basis_size, cut_off, learning_rate)
 
     def build_output_modules(self):
         super(AdditionSchnetNN, self).build_output_modules()
         self.output_modules.append(self.add_module)
+        print(self.output_modules)
 
     def build_output_heads(self):
         self.output_heads = []
@@ -202,3 +202,7 @@ class AdditionSchnetNN(SchnetNN):
                 loss_weight=lossweight,
                 metrics=metrics)
             )
+
+
+def add_function(input_list):
+    return input_list[0] + input_list[1]

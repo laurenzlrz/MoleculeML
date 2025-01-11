@@ -8,7 +8,7 @@ from src.general.props import NNDefaultValue
 from src.general.utils import VisualisationUtility
 from src.training.SchnetTrainer import SchnetTrainer
 from src.training.SchnetNN import SchnetNN, AdditionSchnetNN
-from src.LoggerCallback import EpochMetricsCallback, LoggerSaverCallback
+from src.training.LoggerCallback import EpochMetricsCallback, LoggerSaverCallback
 from src.training.GeometrySchnetDB import GeometrySchnetDB
 from src.visualisation.TrainingVisualisation import VisualisationTensorboardLoader, TrainingVisualisation
 
@@ -22,6 +22,7 @@ NOT_A_SCHNET_MODEL = "The 'constructor' must be a model class or function"
 NO_FREE_DIRECTORY = "No free directory found until break {def_break}"
 
 MODEL_ROOT_FORMAT = "{all_model_root}/{name}_{i}"
+COMPARATOR_ROOT_FORMAT = "{all_model_root}/comparisons_{i}"
 MODEL_STAT_PATH = "{path}/model_stats.csv"
 CALLBACK_PATH = "{path}/metrics"
 TRAINER_PATH = "{path}/trainer"
@@ -38,12 +39,12 @@ DEF_COMPARISON_PATH = "{path}/comparisons_{i}.csv"
 
 class MultiTrainOrganizer:
 
-    def __init__(self, dataset_name, db_project_root, train_project_root, used_props, batch_size, num_val, num_train,
-                 num_test):
+    def __init__(self, dataset_name, db_project_root, train_project_root, used_props, batch_size, num_val, num_train):
         self.dataset_name = dataset_name
         self.db_project_root = db_project_root
         self.train_project_root = train_project_root
         self.db = GeometrySchnetDB.load_existing(dataset_name, db_project_root)
+        self.comparator = Comparator(self.train_project_root)
 
         self.transforms = [
             trn.ASENeighborList(cutoff=5.),
@@ -70,6 +71,9 @@ class MultiTrainOrganizer:
                 return model_dir
         raise FileExistsError(NO_FREE_DIRECTORY.format(def_break=DEF_BREAK))
 
+    def print_comparison(self):
+        self.comparator.save_model_stats(self.organizers)
+
 
 class Comparator:
 
@@ -78,20 +82,22 @@ class Comparator:
 
     def get_free_directory(self):
         for i in range(DEF_BREAK):
-            model_dir = MODEL_ROOT_FORMAT.format(all_model_root=self.directory, i=i)
+            model_dir = COMPARATOR_ROOT_FORMAT.format(all_model_root=self.directory, i=i)
             if not os.path.exists(model_dir):
+                os.makedirs(model_dir)
                 return model_dir
         raise FileExistsError(NO_FREE_DIRECTORY.format(def_break=DEF_BREAK))
 
     def save_model_stats(self, organizers):
         compare_rows = []
         for organizer in organizers:
-            model_summary = organizer.get_model_stats()
-            model_last_epoch = organizer.get_epoch_stats().iloc[-1]
-            compare_row = pd.concat([model_summary, model_last_epoch], axis=1)
+            model_summary = pd.Series(organizer.get_model_stats())  # df
+            model_last_epoch = organizer.get_epoch_stats().iloc[-1]  # series
+            compare_row = pd.concat([model_summary, model_last_epoch])  # komisches
             compare_rows.append(compare_row)
 
         path = self.get_free_directory()
+
         pd.DataFrame(compare_rows).to_csv(MODEL_STAT_PATH.format(path=path))
 
 
@@ -196,10 +202,14 @@ class TrainOrganizer:
 
 class E2ETraining:
 
-    def __init__(self, dataset_name, db_project_root, train_project_root, used_props, batch_size, num_val, num_train,
-                 num_test):
+    def __init__(self, dataset_name, db_project_root, train_project_root, used_props, batch_size, num_val, num_train):
         self.multi_train_organizer = MultiTrainOrganizer(dataset_name, db_project_root, train_project_root, used_props,
-                                                         batch_size, num_val, num_train, num_test)
+                                                         batch_size, num_val, num_train)
+
+    def iterate_pipeline(self, nn_models):
+        for model in nn_models:
+            self.pipeline(model)
+        self.multi_train_organizer.print_comparison()
 
     def pipeline(self, nn_model):
         organizer = self.multi_train_organizer.new_TrainOrganizer(nn_model[NAME_ARG])

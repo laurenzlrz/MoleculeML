@@ -9,6 +9,7 @@ import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
+from src.general.props.NNDefaultValue import DEF_LOG_SAVE_INTERVAL
 from src.general.props.NNMetric import NNMetrics
 from src.general.SchnetAdapterStrings import METRIC_TRAIN_DESCR, METRIC_VALIDATION_DESCR, METRIC_NAME_SEPARATOR
 from src.general.props.MetricPhase import MetricDataType
@@ -24,7 +25,7 @@ FILE_FORMAT = "{path}/{name}_{phase}_{logger}.csv"
 
 class LoggingSaver:
 
-    def __init__(self, name: str, save_path: str, logger_name: str, frequency: int = 1):
+    def __init__(self, name: str, save_path: str, logger_name: str, frequency: int = DEF_LOG_SAVE_INTERVAL):
         self.name = name
         self.save_path = save_path
         self.frequency = frequency
@@ -33,14 +34,18 @@ class LoggingSaver:
         self.epoch_dicts = []
         self.check_dicts = []
 
+        self.last_step = 0
+        self.all_steps = 0
+        self.counter = 0
+
     def save_batch_dict(self, batch_dict):
-        self.batch_dicts.append(batch_dict)
+        self.batch_dicts.append(batch_dict.copy())
 
     def save_epoch_dict(self, epoch_dict):
-        self.epoch_dicts.append(epoch_dict)
+        self.epoch_dicts.append(epoch_dict.copy())
 
     def save_check_dict(self, check_dict):
-        self.check_dicts.append(check_dict)
+        self.check_dicts.append(check_dict.copy())
 
     def get_epoch_dicts(self):
         return self.epoch_dicts
@@ -78,11 +83,21 @@ class LoggingSaver:
     def check_data_to_pd(self) -> Optional[pd.DataFrame]:
         return pd.DataFrame(self.get_check_dicts())
 
-    def check_and_increment_frequency(self, step):
-        if step % self.frequency == 0:
-            self.frequency += 1
+    def check_and_increment_frequency(self, step, epoch):
+        self.counter += 1
+
+        if step == 0 and self.last_step > step:
+            diff = 1
+        elif self.last_step > step:
+            diff = step
+        else:
+            diff = step - self.last_step
+
+        self.last_step = step
+        self.all_steps += diff
+
+        if self.counter % self.frequency == 0:
             return True
-        self.frequency += 1
         return False
 
 class LoggingProxy:
@@ -107,13 +122,13 @@ class LoggingProxy:
 class LoggerSaverCallback(Callback, LoggingSaver):
     # Designed from Atomistic Schnet Task
     # Known from Atomistic Schnet Task: validation metrics are epoch-wise and train metrics are batch-wise
-    def __init__(self, name: str, save_path: str, frequency=1, measure_metrics: List[NNMetrics] = None):
+    def __init__(self, name: str, save_path: str, frequency=DEF_LOG_SAVE_INTERVAL,
+                 measure_metrics: List[NNMetrics] = None):
         LoggingSaver.__init__(self, name, save_path, "Saver", frequency)
         Callback.__init__(self)
         if measure_metrics is None:
             measure_metrics = [mm for mm in NNMetrics]
         self.measure_metrics = measure_metrics
-        self.max_steps = 0
 
     def on_train_batch_end(
             self,
@@ -124,16 +139,14 @@ class LoggerSaverCallback(Callback, LoggingSaver):
             batch_idx: int,
             dataloader_idx: int = 0,
     ) -> None:
-        if batch_idx > self.max_steps:
-            self.max_steps = batch_idx
-        if not self.check_and_increment_frequency(batch_idx):
+        if not self.check_and_increment_frequency(batch_idx, trainer.current_epoch):
             return
         metrics = self.filter_metrics(METRIC_TRAIN_DESCR, trainer.callback_metrics)
-        metrics[NNMetrics.STEP] = batch_idx + self.max_steps * trainer.current_epoch
+        metrics[NNMetrics.STEP] = self.all_steps
         metrics[NNMetrics.EPOCH] = trainer.current_epoch
 
         self.save_batch_dict(metrics)
-        self.save_check_dict(trainer.callback_metrics.copy())
+        self.save_check_dict(trainer.callback_metrics)
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         metrics = self.filter_metrics(METRIC_VALIDATION_DESCR, trainer.callback_metrics)
@@ -155,8 +168,8 @@ class LoggerSaverCallback(Callback, LoggingSaver):
 class EpochMetricsCallback(Callback, LoggingSaver, LoggingProxy):
     # Here individual Logging and adding to default logger
 
-    def __init__(self, name: str, save_path: str, frequency=1):
-        LoggingSaver.__init__(self, name, save_path, "ressources", frequency)
+    def __init__(self, name: str, save_path: str, frequency=DEF_LOG_SAVE_INTERVAL):
+        LoggingSaver.__init__(self, name, save_path, "ressources", frequency=frequency)
         LoggingProxy.__init__(self)
         Callback.__init__(self)
         self.epoch_dict = None

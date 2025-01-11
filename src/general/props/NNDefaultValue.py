@@ -13,5 +13,5 @@ DEF_CHECKPOINT_NUMBER_SAVES = 1
 DEF_LOGGING_INTERVAL = 1
 DEF_NUMBER_EPOCHS = 2
 
-DEF_DISPLAY_METRICS =  [NNMetrics.LOSS, NNMetrics.MAE, NNMetrics.MSE, NNMetrics.R2, NNMetrics.NRMSE,
-                               NNMetrics.EPOCH_TIME, NNMetrics.EPOCH_MEMORY, NNMetrics.EPOCH_GPU_MEMORY]
+DEF_DISPLAY_METRICS = [NNMetrics.LOSS, NNMetrics.MAE, NNMetrics.MSE, NNMetrics.R2, NNMetrics.NRMSE,
+                       NNMetrics.EPOCH_TIME, NNMetrics.EPOCH_MEMORY, NNMetrics.EPOCH_GPU_MEMORY]
