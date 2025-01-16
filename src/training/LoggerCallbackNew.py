@@ -8,6 +8,7 @@ import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
+from src.general.props.MetricPhase import MetricDataType
 from src.general.SchnetAdapterStrings import METRIC_TRAIN_DESCR, METRIC_VALIDATION_DESCR, METRIC_NAME_SEPARATOR
 from src.general.props.NNDefaultValue import DEF_LOG_SAVE_INTERVAL
 from src.general.props.NNMetric import NNMetrics
@@ -20,6 +21,9 @@ GPU_NOT_AVAILABLE_DEFAULT = 0.0
 
 FILE_FORMAT = "{path}/{name}_{phase}_{logger}.csv"
 
+EPOCH_PHASE = MetricDataType.EPOCH
+BATCH_PHASE = MetricDataType.BATCH
+
 
 class LoggingSaver:
 
@@ -27,41 +31,60 @@ class LoggingSaver:
         self.frequency = frequency
         self._logger_name = logger_name
 
-        self._batch_dicts = []
-        self._epoch_dicts = []
-        self._check_dicts = []
+        self._batch_dicts = {}
+        self._epoch_dicts = {}
+        self._check_dicts = {}
 
-        self._batch_df = None
-        self._epoch_df = None
-        self._check_df = None
+        self._batch_df = {}
+        self._epoch_df = {}
+        self._check_df = {}
 
-        self.last_step = 0
-        self.all_steps = 0
-        self.counter = 0
+        self.last_step = {}
+        self.all_steps = {}
+        self.counter = {}
 
-    def save_batch_dict(self, batch_dict):
-        self._batch_dicts.append(batch_dict.copy())
+    def save_batch_dict(self, batch_dict, pl, phase):
+        key = (pl, phase)
+        if key not in self._batch_dicts:
+            self._batch_dicts[key] = []
 
-    def save_epoch_dict(self, epoch_dict):
-        self._epoch_dicts.append(epoch_dict.copy())
+        self._batch_dicts[key].append(batch_dict.copy())
 
-    def save_check_dict(self, check_dict):
-        self._check_dicts.append(check_dict.copy())
+    def save_epoch_dict(self, epoch_dict, pl, phase):
+        key = (pl, phase)
+        if key not in self._epoch_dicts:
+            self._epoch_dicts[key] = []
 
-    def finalise(self):
-        self._batch_df = pd.DataFrame(self._batch_dicts).drop_duplicates(subset=[NNMetrics.STEP])
-        self._epoch_df = pd.DataFrame(self._epoch_dicts).drop_duplicates(subset=[NNMetrics.EPOCH])
-        self._check_df = pd.DataFrame(self._check_dicts)
+        self._epoch_dicts[key].append(epoch_dict.copy())
 
-    def check_and_increment_frequency(self, step):
-        self.counter += 1
+    def save_check_dict(self, check_dict, pl, phase):
+        key = (pl, phase)
+        if key not in self._check_dicts:
+            self._check_dicts[key] = []
 
-        diff = max(1, step) if self.last_step > step else step - self.last_step
+        self._check_dicts[key].append(check_dict.copy())
 
-        self.last_step = step
-        self.all_steps += diff
+    def finalise(self, pl, phase):
+        key = (pl, phase)
 
-        return self.counter % self.frequency == 0
+        self._batch_df[key] = pd.DataFrame(self._batch_dicts[key]).drop_duplicates(subset=[NNMetrics.STEP])
+        self._epoch_df[key] = pd.DataFrame(self._epoch_dicts[key]).drop_duplicates(subset=[NNMetrics.EPOCH])
+        self._check_df[key] = pd.DataFrame(self._check_dicts[key])
+
+    def check_and_increment_frequency(self, step, pl, phase):
+        key = (pl, phase)
+        if key not in self.counter:
+            self.counter[key] = 0
+            self.last_step[key] = 0
+            self.all_steps[key] = 0
+
+        self.counter[key] += 1
+
+        diff = max(1, step) if self.last_step[key] > step else step - self.last_step[key]
+        self.last_step[key] = step
+        self.all_steps[key] += diff
+
+        return self.counter[key] % self.frequency == 0
 
     @property
     def batch_dicts(self):
@@ -134,36 +157,16 @@ class LoggerSaverCallback(Callback, LoggingSaver):
             batch_idx: int,
             dataloader_idx: int = 0,
     ) -> None:
-        self.batch_save(trainer, batch_idx)
-
-    def on_test_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        self.epoch_save(trainer)
-
-    def on_test_batch_end(
-        self,
-        trainer: "pl.Trainer",
-        pl_module: "pl.LightningModule",
-        outputs: STEP_OUTPUT,
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int = 0,
-    ) -> None:
-        self.batch_save(trainer, batch_idx)
-
-    def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        self.epoch_save(trainer)
-
-    def batch_save(self, trainer, batch_idx):
-        if not self.check_and_increment_frequency(batch_idx):
+        if not self.check_and_increment_frequency(batch_idx, pl):
             return
         metrics = self.filter_metrics(METRIC_TRAIN_DESCR, trainer.callback_metrics)
         metrics[NNMetrics.STEP] = self.all_steps
         metrics[NNMetrics.EPOCH] = trainer.current_epoch
 
-        self.save_batch_dict(metrics)
+        self.save_batch_dict(metrics, pl, BATCH_PHASE)
         self.save_check_dict(trainer.callback_metrics)
 
-    def epoch_save(self, trainer):
+    def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         metrics = self.filter_metrics(METRIC_VALIDATION_DESCR, trainer.callback_metrics)
         metrics[NNMetrics.EPOCH] = trainer.current_epoch
         self.save_epoch_dict(metrics)
@@ -233,3 +236,87 @@ class EpochMetricsCallback(Callback, LoggingSaver, LoggingProxy):
             self.epoch_dict[NNMetrics.EPOCH_GPU_MEMORY] = torch.cuda.memory_allocated() / GIGABYTE
         else:
             self.epoch_dict[NNMetrics.EPOCH_GPU_MEMORY] = GPU_NOT_AVAILABLE_DEFAULT
+
+"""
+class LoggingSaver:
+
+    def __init__(self, logger_name: str, frequency: int = DEF_LOG_SAVE_INTERVAL):
+        self.frequency = frequency
+        self._logger_name = logger_name
+
+        self._batch_dicts = {}
+        self._epoch_dicts = {}
+        self._check_dicts = {}
+
+        self._batch_df = {}
+        self._epoch_df = {}
+        self._check_df = {}
+
+        self.last_step = {}
+        self.all_steps = {}
+        self.counter = {}
+
+    def save_batch_dict(self, batch_dict, pl, phase):
+        if pl not in self._batch_dicts:
+            self._batch_dicts[pl] = {}
+
+        if not phase in self._batch_dicts[pl]:
+            self._batch_dicts[pl][phase] = []
+
+        self._batch_dicts[pl][phase].append(batch_dict.copy())
+
+    def save_epoch_dict(self, epoch_dict, pl, phase):
+        if pl not in self._epoch_dicts:
+            self._epoch_dicts[pl] = {}
+
+        if not phase in self._epoch_dicts[pl]:
+            self._epoch_dicts[pl][phase] = []
+
+        self._epoch_dicts[pl][phase].append(epoch_dict.copy())
+
+    def save_check_dict(self, check_dict, pl, phase):
+        if pl not in self._check_dicts:
+            self._check_dicts[pl] = {}
+
+        if not phase in self._check_dicts[pl]:
+            self._check_dicts[pl][phase] = []
+
+        self._check_dicts[pl][phase].append(check_dict.copy())
+
+    def finalise(self, pl, phase):
+        if pl not in self._batch_dicts:
+            self._batch_dicts[pl] = {}
+        if pl not in self._epoch_dicts:
+            self._epoch_dicts[pl] = {}
+        if pl not in self._check_dicts:
+            self._check_dicts[pl] = {}
+
+        self._batch_df[pl][phase] = pd.DataFrame(self._batch_dicts[pl]).drop_duplicates(subset=[NNMetrics.STEP])
+        self._epoch_df[pl][phase] = pd.DataFrame(self._epoch_dicts[pl]).drop_duplicates(subset=[NNMetrics.EPOCH])
+        self._check_df[pl][phase] = pd.DataFrame(self._check_dicts[pl])
+
+    def check_and_increment_frequency(self, step, pl, phase):
+        if pl not in self.counter:
+            self.counter[pl] = {}
+            self.last_step[pl] = {}
+            self.all_steps[pl] = {}
+        
+        if phase not in self.counter[pl]:
+            self.counter[pl][phase] = 0
+        
+        if phase not in self.last_step[pl]:
+            self.last_step[pl][phase] = 0
+            
+        if phase not in self.all_steps[pl]:
+            self.all_steps[pl][phase] = 0
+            
+        self.counter[pl][phase] += 1
+        
+
+        diff = max(1, step) if self.last_step[pl][phase] > step else step - self.last_step[pl][phase]
+
+        self.last_step[pl][phase] = step
+        self.all_steps += diff
+
+        return self.counter[pl][phase] % self.frequency == 0
+        """

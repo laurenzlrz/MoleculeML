@@ -3,6 +3,7 @@ import schnetpack.transform as trn
 import torch
 import torch.nn as nn
 import torchmetrics
+from schnetpack.atomistic import Atomwise
 
 from src.general import SchnetAdapterStrings
 from src.general.props import NNDefaultValue
@@ -51,10 +52,13 @@ class SchnetNN:
     def build_output_modules(self):
         self.output_modules = []
         for prediction_key in self.prediction_keys:
+            pred_module = spk.atomistic.Atomwise(n_in=self.atom_basis_size, output_key=prediction_key.value)
+            """
             pred_module = AugmentedAtomwise(atoms_in=self.atom_basis_size,
                                             properties_in=self.properties_in,
                                             n_out=self.predictions_out[prediction_key],
                                             output_key=prediction_key.value)
+            """
             self.output_modules.append(pred_module)
 
     def build_postprocessors(self):
@@ -107,10 +111,9 @@ class SchnetNN:
             self.predictions_out[prediction_key] = shape[0]
 
     # TODO MERGE SCHnetNN and SchnetTrainer
-    def __init__(self, name, additional_input_keys, prediction_keys, atom_basis_size=DEF_ATOM_BASIS_SIZE,
+    def __init__(self, additional_input_keys, prediction_keys, atom_basis_size=DEF_ATOM_BASIS_SIZE,
                  num_of_interactions=DEF_NUM_OF_INTERACTIONS, rbf_basis_size=DEF_RBF_BASIS_SIZE, cut_off=DEF_CUTOFF,
                  learning_rate=DEF_LEARNING_RATE):
-        self.name = name
         self.additional_input_keys = additional_input_keys
         self.prediction_keys = prediction_keys
 
@@ -122,6 +125,7 @@ class SchnetNN:
 
         # Dict contains the dimensions of the different properties and properties as Strings not the properties as enums
         self.properties_in = None
+        # Predictions out can be used to determine the output size of the network
         self.predictions_out = None
         self.input_modules = None
         self.schnet_representation = None
@@ -164,12 +168,18 @@ class SchnetNN:
         total_params = sum(p.numel() for p in self.network.parameters())
         trainable_params = sum(p.numel() for p in self.network.parameters() if p.requires_grad)
         optimizer = str(self.task.configure_optimizers())
+        inputs = [key.value for key in self.additional_input_keys.keys()]
+        inputs.append(MolProperty.COORDINATES.value)
+        preds = [key.value for key in self.prediction_keys.keys()]
 
         summary = {
-            NNProperty.NAME: self.name,
+            NNProperty.LEARNING_RATE: self.learning_rate,
             NNProperty.TOTAL_PARAMETERS: total_params,
             NNProperty.TRAINABLE_PARAMETERS: trainable_params,
-            NNProperty.OPTIMIZER: optimizer
+            NNProperty.OPTIMIZER: optimizer,
+            NNProperty.INPUTS: inputs,
+            NNProperty.PREDICTIONS: preds,
+            NNProperty.OUTPUTS: preds
         }
 
         return summary
@@ -177,12 +187,12 @@ class SchnetNN:
 
 class AdditionSchnetNN(SchnetNN):
 
-    def __init__(self, name, additional_input_keys, prediction_keys, measure_keys, add1, add2, output,
+    def __init__(self, additional_input_keys, prediction_keys, measure_keys, add1, add2, output,
                  atom_basis_size=DEF_ATOM_BASIS_SIZE, num_of_interactions=DEF_NUM_OF_INTERACTIONS,
                  rbf_basis_size=DEF_RBF_BASIS_SIZE, cut_off=DEF_CUTOFF, learning_rate=DEF_LEARNING_RATE):
         self.measure_keys = measure_keys
         self.add_module = AdditionOutputModule([add1.value, add2.value], output.value, add_function)
-        super(AdditionSchnetNN, self).__init__(name, additional_input_keys, prediction_keys, atom_basis_size,
+        super(AdditionSchnetNN, self).__init__(additional_input_keys, prediction_keys, atom_basis_size,
                                                num_of_interactions, rbf_basis_size, cut_off, learning_rate)
 
     def build_output_modules(self):
@@ -203,6 +213,26 @@ class AdditionSchnetNN(SchnetNN):
                 metrics=metrics)
             )
 
+    def summary(self):
+        total_params = sum(p.numel() for p in self.network.parameters())
+        trainable_params = sum(p.numel() for p in self.network.parameters() if p.requires_grad)
+        optimizer = str(self.task.configure_optimizers())
+        inputs = [key.value for key in self.additional_input_keys.keys()]
+        inputs.append(MolProperty.COORDINATES.value)
+        preds = [key.value for key in self.prediction_keys.keys()]
+        estimates = [key.value for key in self.measure_keys]
+
+        summary = {
+            NNProperty.LEARNING_RATE: self.learning_rate,
+            NNProperty.TOTAL_PARAMETERS: total_params,
+            NNProperty.TRAINABLE_PARAMETERS: trainable_params,
+            NNProperty.OPTIMIZER: optimizer,
+            NNProperty.INPUTS: inputs,
+            NNProperty.PREDICTIONS: preds,
+            NNProperty.OUTPUTS: estimates
+        }
+
+        return summary
 
 def add_function(input_list):
     return input_list[0] + input_list[1]

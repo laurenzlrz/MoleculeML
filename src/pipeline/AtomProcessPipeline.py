@@ -1,6 +1,8 @@
 import faulthandler
 import os
+from typing import List
 
+import numpy as np
 from tblite.ase import TBLite
 
 from src.training.GeometrySchnetDB import GeometrySchnetDB
@@ -15,9 +17,11 @@ from src.general.props.MolProperty import MolProperty
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-DEF_SELECTED_ATTRIBUTES = [MolProperty.TOTAL_ENERGY, MolProperty.OLD_ENERGIES, MolProperty.FORCES]
+DEF_SELECTED_ATTRIBUTES = [MolProperty.TOTAL_ENERGY_TRUTH]
 DEF_SELECTED_MOLECULES = ['aspirin']
-DB_NAME = "Geometry5"
+DB_NAME = "TrainASPIRIN1000MEANDIFF"
+
+DB_PATH = "data/databases/"
 
 
 class AtomProcessPipeline:
@@ -25,7 +29,16 @@ class AtomProcessPipeline:
     def __init__(self, db_name=DB_NAME):
         self.db_name = db_name
         self.molecule_data_objects = None
-        self.molecule_geo_objects = None
+        self.molecule_geo_objects: List[GeometryData] = None
+
+
+    def create_new(self):
+        self.geometrySchnetDBHandler = GeometrySchnetDB.create_new(DB_NAME, DB_PATH, self.molecule_geo_objects,
+                                                                   overwrite_db=True)
+
+    def load_existing(self):
+        self.geometrySchnetDBHandler = GeometrySchnetDB.load_existing(DB_NAME, DB_PATH)
+        self.geometrySchnetDBHandler.add_data(self.molecule_geo_objects)
 
     def process(self, selected_molecules=None, selected_attributes=None):
         if selected_attributes is None:
@@ -36,7 +49,8 @@ class AtomProcessPipeline:
         faulthandler.enable()
         MD17_loader = MD17Dataloader()
         MD17_loader.set_data_to_load()
-        MD17_loader.set_random_split(99000, 10)
+        MD17_loader.load_split("test", 1)
+        #MD17_loader.set_random_split(99000, 20)
 
         MD17_loader.load_molecules()
 
@@ -48,10 +62,12 @@ class AtomProcessPipeline:
         self.calculate_on_geometries()
 
         # molecule_geometry_data.perform_calculations(geometry_calculator)
-        geometrySchnetDBHandler = GeometrySchnetDB.create_new(DB_NAME, self.molecule_geo_objects,
-                                                              overwrite_db=True)
+
+        self.create_new()
+        #self.load_existing()
+
         # geometrySchnetDBHandler.create_schnet_module()
-        # print(geometrySchnetDBHandler)
+        print(self.geometrySchnetDBHandler)
 
     def calculate_on_geometries(self):
         geometry_calculator = EnergyCalculator(TBLite(method="GFN2-xTB"))
@@ -68,3 +84,14 @@ class AtomProcessPipeline:
                                                    result_attribute=MolProperty.TOTAL_ENERGY_DIFFERENCE)
 
         [difference_processor.calculate(geometry_object) for geometry_object in self.molecule_geo_objects]
+
+        for geometry_object in self.molecule_geo_objects:
+            energies = geometry_object.get_additional_attributes()[MolProperty.TOTAL_ENERGY_TRUTH]
+            mean = energies.mean()
+            base_difference_energies = energies - mean
+            base_energies = np.full(len(base_difference_energies), mean)
+            unit = geometry_object.get_additional_units()[MolProperty.TOTAL_ENERGY_TRUTH]
+            geometry_object.add_attribute(MolProperty.BASE_ENERGY_DIFFERENCE, base_difference_energies, unit)
+            geometry_object.add_attribute(MolProperty.BASE_ENERGY, base_energies, unit)
+
+

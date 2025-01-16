@@ -24,10 +24,11 @@ ATTRIBUTE_UNITS = {MolProperty.ELEMENTS: Units.CHARGE,
                    MolProperty.FORCES: Units.KCALPERMOLANGSTROM,
                    MolProperty.OLD_ELEMENTS: Units.CHARGE,
                    MolProperty.OLD_ENERGIES: Units.KCALPERMOL,
-                   MolProperty.OLD_FORCES: Units.KCALPERMOLANGSTROM
+                   MolProperty.OLD_FORCES: Units.KCALPERMOLANGSTROM,
+                   MolProperty.TOTAL_ENERGY_TRUTH: Units.KCALPERMOL,
                    }
 
-ATTRIBUTE_KEYS = {MolProperty.TOTAL_ENERGY: 'energies',
+ATTRIBUTE_KEYS = {MolProperty.TOTAL_ENERGY_TRUTH: 'energies',
                   MolProperty.FORCES: 'forces',
                   MolProperty.COORDINATES: 'coords',
                   MolProperty.ELEMENTS: 'nuclear_charges',
@@ -81,6 +82,10 @@ class MD17Dataloader(AbstractDataLoader):
             molecule_name: MOLECULE_DIRECTORY + PATH_SEPARATOR +
             MOLECULE_DATA_FORMAT_STRING.format(molecule_name=molecule_name)
             for molecule_name in molecule_names}
+
+        for molecule_attribute in molecule_attributes:
+            if molecule_attribute not in ATTRIBUTE_KEYS:
+                raise ValueError(f"Attribute {molecule_attribute} is not a valid molecule attribute.")
 
         self.selected_molecule_attributes = molecule_attributes.copy()
 

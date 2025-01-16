@@ -9,4 +9,8 @@ class NNProperty(Enum):
     TOTAL_PARAMETERS = "total_parameters"
     TRAINABLE_PARAMETERS = "trainable_parameters"
     OPTIMIZER = "optimizer"
+    LEARNING_RATE = "learning_rate"
+    PREDICTIONS = "predictions"
+    INPUTS = "inputs"
+    OUTPUTS = "outputs"
 

@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from ase import Atoms
@@ -58,7 +58,7 @@ class GeometrySchnetDB:
         self.prop_units = None
 
         self.schnet_db = None
-        self.schnet_data_module = None
+        self.schnet_data_module: Optional[AtomsDataModule] = None
 
     def _load_existing_db(self):
         print(self.path)
@@ -131,7 +131,7 @@ class GeometrySchnetDB:
         return self.schnet_db
 
     def create_schnet_module(self, selected_properties=None, batch_size=2, num_train=6, num_val=4,
-                             transforms=None, num_workers=1, pin_memory=True, split_path=None):
+                             transforms=None, num_workers=4, pin_memory=True, split_path=None):
         if transforms is None:
             transforms = []
 
@@ -145,7 +145,6 @@ class GeometrySchnetDB:
         else:
             selected_unit_dict = {prop.value: self.prop_units[prop].value for prop in selected_properties}
 
-        print(self.path)
         new_data_module = AtomsDataModule(self.path,
                                           distance_unit=self.geometry_unit.value,
                                           property_units=selected_unit_dict,
@@ -154,8 +153,6 @@ class GeometrySchnetDB:
                                           transforms=transforms, num_workers=num_workers, pin_memory=pin_memory,
                                           split_file=split_path)
         new_data_module.prepare_data()
-        print(self.schnet_db.units)
-        print(self.schnet_db.distance_unit)
         new_data_module.setup()
         self.schnet_data_module = new_data_module
         return new_data_module
@@ -203,10 +200,15 @@ class GeometrySchnetDB:
             print_str += f"- Validation itself: {self.schnet_data_module.val_dataloader()}\n"
             print_str += f"- Number of batches: {len(self.schnet_data_module.val_dataloader())}\n"
             print_str += f"- Batches Properties\n"
-            for batch in self.schnet_data_module.val_dataloader():
+            for i, batch in enumerate(self.schnet_data_module.val_dataloader()):
+                if i > 0:
+                    break
                 print_str += f"- Batch: {batch.keys()}\n"
             print_str += f"Batches itself:\n"
-            for batch in self.schnet_data_module.val_dataloader():
+
+            for i, batch in enumerate(self.schnet_data_module.val_dataloader()):
+                if i > 0:
+                    break
                 print_str += f"- Batch: {batch}\n"
         return print_str
 

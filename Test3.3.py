@@ -29,9 +29,11 @@ MODELS = [
     }]
 
 # TODO improve overlaying structure
-# TODO check batches numbers (why so short)
-# TODO clear path defining
+# TODO check if addition models work correctly
 # TODO also csv saving from logging results
+# TODO In future change trainer to train multiple models at once
+# TODO make a top-down approach, so that at first models and training programs are defined and
+#  change program structure accordingly to this process
 
 if __name__ == "__main__":
     e2e = E2ETraining(DB_NAME, DATASET_PATH, TRAINING_ROOT, [MolProperty.TOTAL_ENERGY,

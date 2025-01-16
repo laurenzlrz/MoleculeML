@@ -83,9 +83,8 @@ PIC_PATH = "{path}/{stat}.png"
 
 class TrainingVisualisation:
 
-    def __init__(self, vis_path, axis_scaling=None):
+    def __init__(self, axis_scaling=None):
         self.axis_scaling = axis_scaling
-        self.vis_path = vis_path
         self.batch_data = None
         self.epoch_data = None
         self.model_data = None
@@ -99,10 +98,8 @@ class TrainingVisualisation:
     def set_model_data(self, model_data):
         self.model_data = model_data
 
-    def print_epochs(self):
-        for label in self.epoch_data.columns:
-            if label != NNMetrics.EPOCH:
-                self.plot_epoch_figure(label)
+    def print_epochs(self) -> dict[NNMetrics, plt.Figure]:
+        return {label: self.plot_epoch_figure(label) for label in self.epoch_data.columns if label != NNMetrics.EPOCH}
 
     def plot_epoch_figure(self, y_col):
 
@@ -123,12 +120,7 @@ class TrainingVisualisation:
         ax.legend()
         ax.grid(True)
 
-        subfolder = SUBFOLDER.format(path=self.vis_path, phase="epoch")
-        if not os.path.exists(subfolder):
-            os.makedirs(subfolder)
-        fig.savefig(PIC_PATH.format(path=subfolder, stat=y_col.value))
-
-        return fig, ax
+        return fig
 
 
 

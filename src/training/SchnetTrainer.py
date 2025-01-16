@@ -11,7 +11,7 @@ from src.general.SchnetAdapterStrings import NN_PERFORMANCE_KPI
 
 LOG_DIR_NAME = "schnet_logs"
 BEST_MODEL_PREFIX = "best"
-STAT_PATH_FORMAT = "{path}/{name}_trainer_stats.csv"
+STAT_PATH_FORMAT = "{path}/trainer_properties.csv"
 SEPARATOR = "_"
 
 DEF_NUMBER_SAVES = NNDefaultValue.DEF_CHECKPOINT_NUMBER_SAVES
@@ -20,18 +20,20 @@ DEF_NUMBER_EPOCHS = NNDefaultValue.DEF_NUMBER_EPOCHS
 
 LOGGING_SUB_DIR = "logging"
 
+# logg_dir=None,
 
 class SchnetTrainer:
 
-    def __init__(self, training_root, logging_root, name, callbacks=None):
-        self.trainer = None
+    def __init__(self, training_root, logging_root, callbacks=None):
+        self.trainer: Trainer = None
 
-        self.name = name
         self.trainings_root = training_root
         self.logging_root = logging_root
-        self.stats_path = STAT_PATH_FORMAT.format(path=self.trainings_root, name=name)
 
-        best_model_name = f"{self.trainings_root}/{BEST_MODEL_PREFIX}{SEPARATOR}{name}"
+        #if logg_dir is None:
+        #    self.log_dir = LOGGING_SUB_DIR
+
+        best_model_name = f"{self.trainings_root}/{BEST_MODEL_PREFIX}"
 
         if not os.path.exists(self.trainings_root):
             # Ordner erstellen
@@ -40,7 +42,6 @@ class SchnetTrainer:
         if not os.path.exists(self.logging_root):
             # Ordner erstellen
             os.makedirs(logging_root)
-
 
         if callbacks is None:
             self.callbacks = []
@@ -72,11 +73,21 @@ class SchnetTrainer:
         )
 
         self.trainer.fit(task, datamodule=data_module)
-        pd.DataFrame(self.summarize()).to_csv(self.stats_path)
+
+    def test(self, task, data_module):
+        self.trainer = Trainer(
+            log_every_n_steps=DEF_LOGGING_INTERVAL,
+            callbacks=self.callbacks,
+            logger=self.logger,
+            default_root_dir=self.trainings_root,
+            max_epochs=DEF_NUMBER_EPOCHS,
+        )
+
+
+        self.trainer.test(task, datamodule=data_module)
 
     def summarize(self) -> Dict[NNProperty, Any]:
         summary = {
-            NNProperty.NAME: self.name,
             NNProperty.MAX_EPOCHS: self.trainer.max_epochs,
             NNProperty.DEVICES: self.trainer.device_ids,
             NNProperty.STRATEGY: self.trainer.strategy,

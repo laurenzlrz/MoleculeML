@@ -7,6 +7,8 @@ This module contains functions that are used as utilities in the main program.
 from itertools import product
 import re
 
+import torch
+
 
 def generate_indices(shape):
     """
@@ -42,3 +44,10 @@ def split_string(string_to_split, first_part, last_part, separator):
         return first_part, middle, last_part
     else:
         return None, None, None
+
+def setup_gpu():
+    print(torch.cuda.is_available())
+    print("Torch Version:", torch.__version__)
+    print("CUDA Version (falls verfügbar):", torch.version.cuda)
+    #print(torch.cuda.current_device())
+    torch.set_float32_matmul_precision('high')
